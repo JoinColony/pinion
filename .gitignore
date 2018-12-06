@@ -1,0 +1,6 @@
+### Standard stuff
+node_modules
+yarn-error.log
+
+### IPFS node data
+ipfs_data
