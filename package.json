@@ -27,13 +27,19 @@
     "eslint-plugin-eslint-comments": "^3.0.1",
     "eslint-plugin-import": "^2.14.0",
     "eslint-plugin-prettier": "^3.0.0",
+    "ipfs": "^0.33.1",
+    "ipfsd-ctl": "^0.40.1",
     "prettier": "^1.15.3"
   },
   "dependencies": {
     "ipfs-http-client": "^27.1.0",
-    "orbit-db": "^0.19.9"
+    "orbit-db": "^0.19.9",
+    "orbit-db-pubsub": "^0.5.5"
   },
   "resolutions": {
     "orbit-db": "joinColony/orbit-db#develop"
+  },
+  "ava": {
+    "files": "**/__tests__/*.test.js"
   }
 }
