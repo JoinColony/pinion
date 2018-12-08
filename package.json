@@ -30,7 +30,7 @@
     "eslint-plugin-prettier": "^3.0.0",
     "husky": "^1.2.0",
     "ipfs": "^0.33.1",
-    "ipfsd-ctl": "^0.40.1",
+    "ipfsd-ctl": "0.40.0",
     "lint-staged": "^8.1.0",
     "prettier": "^1.15.3"
   },
@@ -40,7 +40,7 @@
     "orbit-db-pubsub": "^0.5.5"
   },
   "resolutions": {
-    "orbit-db": "joinColony/orbit-db#develop"
+    "orbit-db": "joinColony/orbit-db#e014c2ba2093e60b7ccaba7fd24b52274b15b452"
   },
   "ava": {
     "files": "**/__tests__/*.test.js"

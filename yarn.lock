@@ -3743,7 +3743,7 @@ ipfs-block@~0.8.0:
     cids "~0.5.5"
     class-is "^1.1.0"
 
-ipfs-http-client@^27.0.0, ipfs-http-client@^27.1.0:
+ipfs-http-client@^27.1.0:
   version "27.1.0"
   resolved "https://registry.yarnpkg.com/ipfs-http-client/-/ipfs-http-client-27.1.0.tgz#5db19d2d63210098e9651e9909275ddd9dd19289"
   integrity sha512-Id9C0V8Bxnr8xBjXdVf7qUBAnslkvgHSFJw+csx4t5dqqeaI/aOLnNZG/6RBgmvI0//3ixKgwzgSt2vBHxeikw==
@@ -4063,10 +4063,10 @@ ipfs@^0.33.1:
     prom-client "^11.1.3"
     prometheus-gc-stats "~0.6.0"
 
-ipfsd-ctl@^0.40.1:
-  version "0.40.1"
-  resolved "https://registry.yarnpkg.com/ipfsd-ctl/-/ipfsd-ctl-0.40.1.tgz#2a7888147f40506d33e65e523824f6c437361502"
-  integrity sha512-oGb73BoMKBI34Xv4ukuFj51fYIObdmE2v6akOw1trdaXKh9CG7dSIy96j+G24kNmOakcDLo+YNNKNA4GYRU3yg==
+ipfsd-ctl@0.40.0:
+  version "0.40.0"
+  resolved "https://registry.yarnpkg.com/ipfsd-ctl/-/ipfsd-ctl-0.40.0.tgz#b8d69b18b16e18265e603e03cb64b77239776524"
+  integrity sha512-gjc3BeR0oXpgpIV3900jq4aShmryONMaGGrdB6Mm8AJJLSp+VcLN/vOcYfIURxDnne2+S01vBf6SpbsqgMRi0Q==
   dependencies:
     async "^2.6.1"
     base-x "^3.0.5"
@@ -4077,7 +4077,7 @@ ipfsd-ctl@^0.40.1:
     execa "^1.0.0"
     hapi "^16.6.2"
     hat "~0.0.3"
-    ipfs-http-client "^27.0.0"
+    ipfs-api "^26.1.0"
     joi "^14.0.4"
     libp2p-crypto "~0.14.0"
     lodash.clone "^4.5.0"
@@ -6653,7 +6653,7 @@ orbit-db-pubsub@^0.5.5, orbit-db-pubsub@~0.5.5:
     p-each-series "^1.0.0"
     readable-stream "~2.3.5"
 
-orbit-db@^0.19.9, orbit-db@joinColony/orbit-db#develop:
+orbit-db@^0.19.9, orbit-db@joinColony/orbit-db#e014c2ba2093e60b7ccaba7fd24b52274b15b452:
   version "0.19.9"
   resolved "https://codeload.github.com/joinColony/orbit-db/tar.gz/e014c2ba2093e60b7ccaba7fd24b52274b15b452"
   dependencies:
