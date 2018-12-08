@@ -34,6 +34,13 @@ class Pinner extends EventEmitter {
     return pinner;
   }
 
+  async close() {
+    // Does ipfs-http-client provide any means to disconnect from the node? Is that even necessary?
+    // await this._ipfs.stop();
+    await this._orbitNode.disconnect();
+    await this._pubsub.disconnect();
+  }
+
   handleNewPeer(topic, peer) {
     this.emit('newpeer', { topic, peer });
   }
