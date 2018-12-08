@@ -8,56 +8,88 @@ const { create: createIPFS } = require('ipfsd-ctl');
 const Pinner = require('..');
 const { PIN_STORE } = require('../actions');
 
-const ROOM = 'PINNER_TEST_ROOM';
+let portCounter = 0;
 
-const getOrbitNode = ipfs =>
+const getIPFSNode = async pinnerId => {
+  portCounter += 1;
+  const client = createIPFS({ type: 'js' });
+  const ipfsd = await promisify(client.spawn.bind(client))({
+    config: {
+      Addresses: {
+        Swarm: [
+          `/ip4/0.0.0.0/tcp/${4002 + portCounter}`,
+          `/ip6/::/tcp/${4002 + portCounter}`,
+        ],
+      },
+      Bootstrap: [`/ip4/127.0.0.1/tcp/4001/ipfs/${pinnerId}`],
+    },
+    start: false,
+  });
+  await promisify(ipfsd.start.bind(ipfsd))(['--enable-pubsub-experiment']);
+  const { id: ipfsdId } = await ipfsd.api.id();
+  return {
+    ipfs: ipfsd.api,
+    id: ipfsdId,
+  };
+};
+
+const getOrbitNode = async ipfs =>
   OrbitDB.createInstance(ipfs, {
     directory: `./orbitdb-test-data/test-${Math.round(Math.random() * 100000)}`,
   });
 
-const getIPFSNode = async pinnerId => {
-  const client = createIPFS({ type: 'js' });
-  const ipfsd = await promisify(client.spawn.bind(client))({
-    config: {
-      Bootstrap: [`/ip4/127.0.0.1/tcp/4001/ipfs/${pinnerId}`],
-    },
-    defaultAddrs: true,
-    start: false,
-  });
-  await promisify(ipfsd.start.bind(ipfsd))(['--enable-pubsub-experiment']);
-  return ipfsd;
+const createKVStore = async (orbitNode, data = {}) => {
+  const store = await orbitNode.kvstore('kvstore1');
+  const keys = Object.keys(data);
+  for (let i = 0; i < keys.length; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    await store.set(keys[i], data[keys[i]]);
+  }
+  return store.address.toString();
 };
 
 test('pinner joins the defined pubsub room', async t => {
-  const pinner = await Pinner.createInstance({
-    room: ROOM,
-  });
-  const { id } = await pinner._ipfs.id();
-  console.info(`Pinner id: ${id}`);
-  const ipfsd = await getIPFSNode(id);
-  const ipfs = ipfsd.api;
-  const { id: ipfsdId } = await ipfs.id();
-  console.info(`IPFSD id: ${ipfsdId}`);
-  const orbit = await getOrbitNode(ipfs);
-  const store = await orbit.kvstore('kvstore1');
-  await store.set({ foo: 'bar' });
-  await store.set({ boo: 'baz' });
-  const address = store.address.toString();
+  const room = 'JOIN_ROOM';
+  const pinner = await Pinner.createInstance({ room });
+  const { id: pinnerId } = await pinner._ipfs.id();
+  const { ipfs, id: ipfsdId } = await getIPFSNode(pinnerId);
   const pubsub = new Pubsub(ipfs, ipfsdId);
+  return new Promise(async resolve => {
+    await pubsub.subscribe(
+      room,
+      () => {},
+      async (topic, peer) => {
+        t.is(peer, pinnerId);
+        await pinner.close();
+        resolve();
+      },
+    );
+  });
+});
+
+test('pinner pins stuff', async t => {
+  const room = 'PIN_ROOM';
+  const pinner = await Pinner.createInstance({ room });
+  const { id: pinnerId } = await pinner._ipfs.id();
+  const { ipfs, id: ipfsdId } = await getIPFSNode(pinnerId);
+  const pubsub = new Pubsub(ipfs, ipfsdId);
+  const orbit = await getOrbitNode(ipfs);
+  const storeAddress = await createKVStore(orbit, { foo: 'bar', biz: 'baz' });
   await pubsub.subscribe(
-    ROOM,
+    room,
     () => {},
-    (topic, peer) => {
-      console.info(`found new peer: ${peer}`);
+    async () => {
       // On every new peer we tell everyone that we want to pin the store
-      pubsub.publish(ROOM, { type: PIN_STORE, payload: { address } });
+      pubsub.publish(room, {
+        type: PIN_STORE,
+        payload: { address: storeAddress },
+      });
     },
   );
-  const promise = new Promise(resolve => {
+  const pinnedStoreAddress = await new Promise(resolve => {
     pinner.on('pinned', msg => {
       resolve(msg);
     });
   });
-  const result = await promise;
-  t.is(result, address);
+  t.is(pinnedStoreAddress, storeAddress);
 });
