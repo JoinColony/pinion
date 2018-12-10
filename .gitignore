@@ -3,7 +3,12 @@ node_modules
 yarn-error.log
 
 ### IPFS node data
-ipfs_data
+data/*
+!data/config
+!data/version
+!data/datastore_spec
 
 ### orbit node data
 orbitdb*
+
+
