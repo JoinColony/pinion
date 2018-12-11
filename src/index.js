@@ -4,7 +4,7 @@ const ipfsClient = require('ipfs-http-client');
 const OrbitDB = require('orbit-db');
 const Pubsub = require('orbit-db-pubsub');
 
-const { PIN_STORE } = require('./actions');
+const { LOAD_STORE, PIN_STORE } = require('./actions');
 
 const ORBITDB_PATH = './orbitdb';
 const DAEMON_URL = '/ip4/127.0.0.1/tcp/5001';
@@ -49,18 +49,30 @@ class Pinner extends EventEmitter {
     // TODO: Probably try/catch
     console.info(`opening store: ${address}`);
     const store = await this._orbitNode.open(address);
+    // TODO: race for replicated or timeout
     store.events.on(
       'replicate.progress',
       (storeAddress, hash, entry, progress, have) => {
-        console.info(`storeAddress: ${storeAddress}`);
-        console.info(`hash: ${hash}`);
-        console.info(`entry: ${entry}`);
-        console.info(`progress: ${progress}`);
-        console.info(`have: ${have}`);
+        // console.info(`storeAddress: ${storeAddress}`);
+        // console.info(`hash: ${hash}`);
+        // console.info(`entry: ${JSON.stringify(entry)}`);
+        // console.info(`progress: ${progress}`);
+        // console.info(`have: ${have}`);
         this._ipfs.pin.add(hash);
-        if (progress === have) this.emit('pinned', address);
+        if (progress === have) {
+          this.emit('pinned', address);
+          store.close();
+          // TODO: db.events.on('closed', (dbname) => ... )
+        }
       },
     );
+  }
+
+  async loadStore({ address }) {
+    console.info(`opening store: ${address}`);
+    const store = await this._orbitNode.open(address);
+    await store.load();
+    // TODO: race for replicated or timeout
   }
 
   handleNewMessage(topic, { type, payload }) {
@@ -69,6 +81,10 @@ class Pinner extends EventEmitter {
     switch (type) {
       case PIN_STORE: {
         this.pinStore(payload);
+        break;
+      }
+      case LOAD_STORE: {
+        this.loadStore(payload);
         break;
       }
       default:
