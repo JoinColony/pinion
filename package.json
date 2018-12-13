@@ -10,7 +10,8 @@
     "test": "ava",
     "lint": "eslint --fix src",
     "ipfsd": "docker run -d --name ipfs_host -v $(pwd)/data:/data/ipfs -p 4001:4001 -p 4003:4003 -p 127.0.0.1:8080:8080 -p 127.0.0.1:5001:5001 ipfs/go-ipfs:latest daemon --enable-pubsub-experiment",
-    "ipfsd:clean": "docker rm ipfs_host --force"
+    "ipfsd:clean": "docker rm ipfs_host --force",
+    "test:ci": "wait-on tcp:5001 && yarn test --tap | tap-xunit > reports/ava/ava-results.xml"
   },
   "keywords": [
     "ipfs",
@@ -33,7 +34,9 @@
     "ipfs": "^0.33.1",
     "ipfsd-ctl": "0.40.0",
     "lint-staged": "^8.1.0",
-    "prettier": "^1.15.3"
+    "prettier": "^1.15.3",
+    "tap-xunit": "^2.3.0",
+    "wait-on": "^3.2.0"
   },
   "dependencies": {
     "ipfs-http-client": "^27.1.0",
