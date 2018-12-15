@@ -39,9 +39,10 @@
     "wait-on": "^3.2.0"
   },
   "dependencies": {
+    "debug": "^4.1.0",
     "ipfs-http-client": "^27.1.0",
-    "orbit-db": "^0.19.9",
-    "orbit-db-pubsub": "^0.5.5"
+    "ipfs-pubsub-peer-monitor": "^0.0.8",
+    "orbit-db": "^0.19.9"
   },
   "resolutions": {
     "orbit-db": "joinColony/orbit-db#e014c2ba2093e60b7ccaba7fd24b52274b15b452"

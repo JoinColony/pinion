@@ -1,12 +1,15 @@
+const { Buffer } = require('buffer');
 const { promisify } = require('util');
 
 const test = require('ava');
-const Pubsub = require('orbit-db-pubsub');
+const PeerMonitor = require('ipfs-pubsub-peer-monitor');
 const OrbitDB = require('orbit-db');
 const { create: createIPFS } = require('ipfsd-ctl');
 
 const Pinner = require('..');
 const { LOAD_STORE, PIN_STORE } = require('../actions');
+
+const noop = () => {};
 
 let portCounter = 0;
 
@@ -17,8 +20,8 @@ const getIPFSNode = async pinnerId => {
     config: {
       Addresses: {
         Swarm: [
-          `/ip4/0.0.0.0/tcp/${4003 + portCounter}`,
-          `/ip6/::/tcp/${4003 + portCounter}`,
+          `/ip4/0.0.0.0/tcp/${4004 + portCounter}`,
+          `/ip6/::/tcp/${4004 + portCounter}`,
         ],
       },
       // Bootstrap with our pinner node
@@ -51,90 +54,97 @@ const createKVStore = async (orbitNode, data = {}) => {
 
 test('pinner joins the defined pubsub room', async t => {
   const room = 'JOIN_ROOM';
-  const pinner = await Pinner.createInstance({ room });
-  const { id: pinnerId } = await pinner._ipfs.id();
-  const { ipfs, id: ipfsdId } = await getIPFSNode(pinnerId);
-  const pubsub = new Pubsub(ipfs, ipfsdId);
-  return new Promise(async resolve => {
-    await pubsub.subscribe(
-      room,
-      () => {},
-      async (topic, peer) => {
-        t.is(peer, pinnerId);
-        await pinner.close();
-        resolve();
-      },
-    );
-  });
+  const pinner = new Pinner(room);
+  const pinnerId = await pinner.getId();
+  const { ipfs } = await getIPFSNode(pinnerId);
+
+  await ipfs.pubsub.subscribe(room, noop);
+  const roomMonitor = new PeerMonitor(ipfs.pubsub, room);
+
+  const promises = [
+    new Promise(resolve => roomMonitor.on('join', resolve)),
+    pinner.init(),
+  ];
+
+  const [peer] = await Promise.all(promises);
+
+  t.is(peer, pinnerId);
+  await ipfs.pubsub.unsubscribe(room, noop);
+  return pinner.close();
 });
 
 test('pinner pins stuff', async t => {
   const room = 'PIN_ROOM';
-  const pinner = await Pinner.createInstance({ room });
-  const { id: pinnerId } = await pinner._ipfs.id();
-  const { ipfs, id: ipfsdId } = await getIPFSNode(pinnerId);
-  const pubsub = new Pubsub(ipfs, ipfsdId);
+  const pinner = new Pinner(room);
+  const pinnerId = await pinner.getId();
+  const { ipfs } = await getIPFSNode(pinnerId);
+  await ipfs.pubsub.subscribe(room, noop);
   const orbit = await getOrbitNode(ipfs);
   const store = await createKVStore(orbit, { foo: 'bar', biz: 'baz' });
-  await pubsub.subscribe(
-    room,
-    () => {},
-    () => {
-      // On every new peer we tell everyone that we want to pin the store
-      pubsub.publish(room, {
-        type: PIN_STORE,
-        payload: { address: store.address.toString() },
-      });
-    },
-  );
+  const roomMonitor = new PeerMonitor(ipfs.pubsub, room);
+  // On every new peer we tell everyone that we want to pin the store
+  roomMonitor.on('join', () => {
+    const action = {
+      type: PIN_STORE,
+      payload: { address: store.address.toString() },
+    };
+    ipfs.pubsub.publish(room, Buffer.from(JSON.stringify(action)));
+  });
+  await pinner.init();
   const pinnedStoreAddress = await new Promise(resolve => {
     pinner.on('pinned', msg => {
       resolve(msg);
     });
   });
   t.is(pinnedStoreAddress, store.address.toString());
+  await ipfs.pubsub.unsubscribe(room, noop);
+  await orbit.disconnect();
+  roomMonitor.stop();
+  return pinner.close();
 });
 
 test('A third peer can request a previously pinned store', async t => {
   const room = 'LOAD_ROOM';
-  const pinner = await Pinner.createInstance({ room });
-  const { id: pinnerId } = await pinner._ipfs.id();
-  const { ipfs, id: ipfsdId } = await getIPFSNode(pinnerId);
-  const pubsub = new Pubsub(ipfs, ipfsdId);
+  const pinner = new Pinner(room);
+  const pinnerId = await pinner.getId();
+  const { ipfs } = await getIPFSNode(pinnerId);
+  await ipfs.pubsub.subscribe(room, noop);
   const orbit = await getOrbitNode(ipfs);
   const store = await createKVStore(orbit, { foo: 'bar', biz: 'baz' });
-  // Subscribe to the pinning room
-  await pubsub.subscribe(
-    room,
-    () => {},
-    () => {
-      // On every new peer we tell everyone that we want to pin the store
-      pubsub.publish(room, {
-        type: PIN_STORE,
-        payload: { address: store.address.toString() },
-      });
-      pubsub.disconnect();
-    },
-  );
+  const roomMonitor = new PeerMonitor(ipfs.pubsub, room);
+
+  // On every new peer we tell everyone that we want to pin the store
+  roomMonitor.on('join', () => {
+    const action = {
+      type: PIN_STORE,
+      payload: { address: store.address.toString() },
+    };
+    ipfs.pubsub.publish(room, Buffer.from(JSON.stringify(action)));
+  });
+
+  await pinner.init();
   // Wait for pinner to be done
   await new Promise(resolve => pinner.on('pinned', resolve));
+
   // Close the first store (no replication possible)
   await store.close();
-  const { ipfs: ipfs2, id: ipfsdId2 } = await getIPFSNode(pinnerId);
-  const pubsub2 = new Pubsub(ipfs2, ipfsdId2);
+
+  const { ipfs: ipfs2 } = await getIPFSNode(pinnerId);
+  await ipfs2.pubsub.subscribe(room, noop);
+  const roomMonitor2 = new PeerMonitor(ipfs2.pubsub, room);
   const orbit2 = await getOrbitNode(ipfs2);
-  await pubsub2.subscribe(
-    room,
-    () => {},
-    () => {
-      // On every new peer we tell everyone that we want to load the store
-      pubsub2.publish(room, {
-        type: LOAD_STORE,
-        payload: { address: store.address.toString() },
-      });
-    },
-  );
+
+  // On every new peer we tell everyone that we want to load the store
+  roomMonitor2.on('join', () => {
+    const action = {
+      type: LOAD_STORE,
+      payload: { address: store.address.toString() },
+    };
+    ipfs2.pubsub.publish(room, Buffer.from(JSON.stringify(action)));
+  });
+
   const store2 = await orbit2.open(store.address.toString());
+
   await new Promise(resolve =>
     store2.events.on(
       'replicate.progress',
@@ -154,6 +164,12 @@ test('A third peer can request a previously pinned store', async t => {
       },
     ),
   );
+
   const data = store2.get('foo');
-  t.deepEqual(data, 'bar');
+  t.is(data, 'bar');
+
+  await ipfs2.pubsub.unsubscribe(room, noop);
+  roomMonitor2.stop();
+  await orbit2.disconnect();
+  return pinner.close();
 });

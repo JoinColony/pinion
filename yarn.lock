@@ -3663,7 +3663,7 @@ ipfs-pubsub-1on1@~0.0.4:
   dependencies:
     safe-buffer "~5.1.1"
 
-ipfs-pubsub-peer-monitor@~0.0.5:
+ipfs-pubsub-peer-monitor@^0.0.8, ipfs-pubsub-peer-monitor@~0.0.5:
   version "0.0.8"
   resolved "https://registry.yarnpkg.com/ipfs-pubsub-peer-monitor/-/ipfs-pubsub-peer-monitor-0.0.8.tgz#8972676247e6a7d1901e27dcfe11cbd0aecaa1c6"
   integrity sha512-/6YJZn3dBbDUxopetJhgU65uAhOiz77CCTTZqEt4zk6s+r2t5+sYLIqO+1vX6IN3Bx2Hpf8iBdyt8JCkuq/zwg==
@@ -6348,7 +6348,7 @@ orbit-db-identity-provider@^0.0.3, "orbit-db-identity-provider@github:orbitdb/or
   dependencies:
     orbit-db-store "github:orbitdb/orbit-db-store#b5483fe3beec72fb8c98f993ea42b1345467ffd2"
 
-orbit-db-pubsub@^0.5.5, orbit-db-pubsub@~0.5.5:
+orbit-db-pubsub@~0.5.5:
   version "0.5.5"
   resolved "https://registry.yarnpkg.com/orbit-db-pubsub/-/orbit-db-pubsub-0.5.5.tgz#7d6d153b700e4b4396266a0ec354212717f28ee6"
   integrity sha512-o8vATfW7sJ61OrsmaGd2myXdbAc64Plap4Cs4vQ5wlpt4rM74tSo5FY6hIfySei5MuCbxph2y6dDILMhWdcMng==
