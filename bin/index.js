@@ -1,3 +1,4 @@
 const Pinner = require('../src');
 
-Pinner.createInstance({ room: 'COLONY_PINNING_ROOM' });
+const pinner = new Pinner('COLONY_PINNING_ROOM');
+pinner.init();

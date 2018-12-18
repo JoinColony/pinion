@@ -16,6 +16,7 @@ const ORBITDB_PATH = './orbitdb';
 const DAEMON_URL = '/ip4/127.0.0.1/tcp/5001';
 const PINNING_ROOM = 'COLONY_PINNING_ROOM';
 
+/* TODO: we are using the permissive access controller for now, eventually we want to use our access controllers */
 const permissiveAccessController = {
   canAppend() {
     return Promise.resolve(true);
@@ -126,13 +127,15 @@ class Pinner extends EventEmitter {
       'replicate.progress',
       (storeAddress, hash, entry, progress, have) => {
         this._ipfs.pin.add(hash);
+        // TODO: pin on infura:
+        // https://infura.io/docs/ipfs/get/pin_add
+        // https://ipfs.infura.io:5001/api/v0/pin/add?arg=<ipfs-path>&recursive=true&progress=<value>
         if (progress === have) {
           store.events.on('replicated', () => {
             this.emit('pinned', address);
           });
           // TODO: keep it open for some time
           // store.close();
-          // TODO: db.events.on('closed', (dbname) => ... )
         }
       },
     );
