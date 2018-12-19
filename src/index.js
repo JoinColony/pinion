@@ -1,3 +1,7 @@
+const dotenv = require('dotenv');
+
+if (process.env.NODE_ENV !== 'production') dotenv.config();
+
 const EventEmitter = require('events');
 const { Buffer } = require('buffer');
 
@@ -11,10 +15,6 @@ const { HAVE_HEADS, LOAD_STORE, PIN_HASH, PIN_STORE } = require('./actions');
 const logError = debug('pinner:error');
 const logDebug = debug('pinner:debug');
 const logPubsub = debug('pinner:pubsub');
-
-const ORBITDB_PATH = './orbitdb';
-const DAEMON_URL = '/ip4/127.0.0.1/tcp/5001';
-const PINNING_ROOM = 'COLONY_PINNING_ROOM';
 
 /* TODO: we are using the permissive access controller for now, eventually we want to use our access controllers */
 const permissiveAccessController = {
@@ -32,8 +32,11 @@ const permissiveAccessController = {
 class Pinner extends EventEmitter {
   constructor(room) {
     super();
-    this._ipfs = ipfsClient(DAEMON_URL);
-    this._room = room || PINNING_ROOM;
+
+    const { DAEMON_URL } = process.env;
+
+    this._ipfs = ipfsClient(DAEMON_URL || '/ip4/127.0.0.1/tcp/5001');
+    this._room = room || 'COLONY_PINNING_ROOM';
     this._handleMessageBound = this._handleMessage.bind(this);
   }
 
@@ -97,7 +100,7 @@ class Pinner extends EventEmitter {
     logDebug(`Pinner id: ${this.id}`);
 
     this._orbitNode = await OrbitDB.createInstance(this._ipfs, {
-      directory: ORBITDB_PATH,
+      directory: process.env.ORBITDB_PATH || './orbitdb',
     });
 
     await this._ipfs.pubsub.subscribe(this._room, this._handleMessageBound);

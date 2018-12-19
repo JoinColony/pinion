@@ -40,6 +40,7 @@
   },
   "dependencies": {
     "debug": "^4.1.0",
+    "dotenv": "^6.2.0",
     "ipfs-http-client": "^27.1.0",
     "ipfs-pubsub-peer-monitor": "^0.0.8",
     "orbit-db": "^0.19.9"
