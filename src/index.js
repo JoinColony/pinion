@@ -6,7 +6,7 @@ const ipfsClient = require('ipfs-http-client');
 const OrbitDB = require('orbit-db');
 const PeerMonitor = require('ipfs-pubsub-peer-monitor');
 
-const { HAVE_HEADS, LOAD_STORE, PIN_STORE } = require('./actions');
+const { HAVE_HEADS, LOAD_STORE, PIN_HASH, PIN_STORE } = require('./actions');
 
 const logError = debug('pinner:error');
 const logDebug = debug('pinner:debug');
@@ -75,6 +75,10 @@ class Pinner extends EventEmitter {
     }
     const { type, payload } = action;
     switch (type) {
+      case PIN_HASH: {
+        this.pinHash(payload);
+        break;
+      }
       case PIN_STORE: {
         this.pinStore(payload);
         break;
@@ -115,6 +119,12 @@ class Pinner extends EventEmitter {
     await this._orbitNode.disconnect();
     await this._ipfs.pubsub.unsubscribe(this._room, this._handleMessageBound);
     this._roomMonitor.stop();
+  }
+
+  async pinHash({ ipfsHash }) {
+    logDebug(`Pinning ipfs hash: ${ipfsHash}`);
+    await this._ipfs.pin.add(ipfsHash);
+    this.emit('pinnedHash', ipfsHash);
   }
 
   async pinStore({ address }) {

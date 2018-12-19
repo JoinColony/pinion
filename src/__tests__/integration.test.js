@@ -7,7 +7,7 @@ const OrbitDB = require('orbit-db');
 const { create: createIPFS } = require('ipfsd-ctl');
 
 const Pinner = require('..');
-const { LOAD_STORE, PIN_STORE } = require('../actions');
+const { LOAD_STORE, PIN_HASH, PIN_STORE } = require('../actions');
 
 const noop = () => {};
 
@@ -99,6 +99,33 @@ test('pinner pins stuff', async t => {
   t.is(pinnedStoreAddress, store.address.toString());
   await ipfs.pubsub.unsubscribe(room, noop);
   await orbit.disconnect();
+  roomMonitor.stop();
+  return pinner.close();
+});
+
+test('pinner can pin hashes', async t => {
+  const room = 'PIN_ROOM';
+  const pinner = new Pinner(room);
+  const pinnerId = await pinner.getId();
+  const { ipfs } = await getIPFSNode(pinnerId);
+  await ipfs.pubsub.subscribe(room, noop);
+  const [{ hash: ipfsHash }] = await ipfs.add(Buffer.from('test'));
+  const roomMonitor = new PeerMonitor(ipfs.pubsub, room);
+  roomMonitor.on('join', () => {
+    const action = {
+      type: PIN_HASH,
+      payload: { ipfsHash },
+    };
+    ipfs.pubsub.publish(room, Buffer.from(JSON.stringify(action)));
+  });
+  await pinner.init();
+  const publishedIpfsHash = await new Promise(resolve => {
+    pinner.on('pinnedHash', msg => {
+      resolve(msg);
+    });
+  });
+  t.is(publishedIpfsHash, ipfsHash);
+  await ipfs.pubsub.unsubscribe(room, noop);
   roomMonitor.stop();
   return pinner.close();
 });
