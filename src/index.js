@@ -7,6 +7,7 @@ const { Buffer } = require('buffer');
 
 const debug = require('debug');
 const ipfsClient = require('ipfs-http-client');
+const Cache = require('lru-cache');
 const OrbitDB = require('orbit-db');
 const PeerMonitor = require('ipfs-pubsub-peer-monitor');
 
@@ -15,6 +16,11 @@ const { HAVE_HEADS, LOAD_STORE, PIN_HASH, PIN_STORE } = require('./actions');
 const logError = debug('pinner:error');
 const logDebug = debug('pinner:debug');
 const logPubsub = debug('pinner:pubsub');
+
+const storeCacheDisposal = (address, store) =>
+  store.close().then(() => {
+    logDebug(`Store "${address}" was closed...`);
+  });
 
 /* TODO: we are using the permissive access controller for now, eventually we want to use our access controllers */
 const permissiveAccessController = {
@@ -33,11 +39,15 @@ class Pinner extends EventEmitter {
   constructor(room) {
     super();
 
-    const { DAEMON_URL } = process.env;
+    const { DAEMON_URL, OPEN_STORES_THRESHOLD } = process.env;
 
     this._ipfs = ipfsClient(DAEMON_URL || '/ip4/127.0.0.1/tcp/5001');
     this._room = room || 'COLONY_PINNING_ROOM';
     this._handleMessageBound = this._handleMessage.bind(this);
+    this._cache = new Cache({
+      max: Number(OPEN_STORES_THRESHOLD),
+      dispose: storeCacheDisposal,
+    });
   }
 
   _publish(message) {
