@@ -42,8 +42,8 @@ const getOrbitNode = async ipfs =>
     directory: `./orbitdb-test-data/test-${Math.round(Math.random() * 100000)}`,
   });
 
-const createKVStore = async (orbitNode, data = {}) => {
-  const store = await orbitNode.kvstore('kvstore1');
+const createKVStore = async (orbitNode, storeIdentifier, data = {}) => {
+  const store = await orbitNode.kvstore(storeIdentifier);
   const keys = Object.keys(data);
   for (let i = 0; i < keys.length; i += 1) {
     // eslint-disable-next-line no-await-in-loop
@@ -80,7 +80,10 @@ test('pinner pins stuff', async t => {
   const { ipfs } = await getIPFSNode(pinnerId);
   await ipfs.pubsub.subscribe(room, noop);
   const orbit = await getOrbitNode(ipfs);
-  const store = await createKVStore(orbit, { foo: 'bar', biz: 'baz' });
+  const store = await createKVStore(orbit, 'kvstore1', {
+    foo: 'bar',
+    biz: 'baz',
+  });
   const roomMonitor = new PeerMonitor(ipfs.pubsub, room);
   // On every new peer we tell everyone that we want to pin the store
   roomMonitor.on('join', () => {
@@ -99,12 +102,13 @@ test('pinner pins stuff', async t => {
   t.is(pinnedStoreAddress, store.address.toString());
   await ipfs.pubsub.unsubscribe(room, noop);
   await orbit.disconnect();
+  await store.close();
   roomMonitor.stop();
   return pinner.close();
 });
 
 test('pinner can pin hashes', async t => {
-  const room = 'PIN_ROOM';
+  const room = 'PIN_HASH_ROOM';
   const pinner = new Pinner(room);
   const pinnerId = await pinner.getId();
   const { ipfs } = await getIPFSNode(pinnerId);
@@ -137,7 +141,10 @@ test('A third peer can request a previously pinned store', async t => {
   const { ipfs } = await getIPFSNode(pinnerId);
   await ipfs.pubsub.subscribe(room, noop);
   const orbit = await getOrbitNode(ipfs);
-  const store = await createKVStore(orbit, { foo: 'bar', biz: 'baz' });
+  const store = await createKVStore(orbit, 'kvstore1', {
+    foo: 'bar',
+    biz: 'baz',
+  });
   const roomMonitor = new PeerMonitor(ipfs.pubsub, room);
 
   // On every new peer we tell everyone that we want to pin the store
@@ -197,6 +204,56 @@ test('A third peer can request a previously pinned store', async t => {
 
   await ipfs2.pubsub.unsubscribe(room, noop);
   roomMonitor2.stop();
+  await orbit.disconnect();
   await orbit2.disconnect();
+  await store2.close();
+  return pinner.close();
+});
+
+test('pinner caches stores and limit them to a pre-defined threshold', async t => {
+  const openStoresThreshold = process.env.OPEN_STORES_THRESHOLD;
+  process.env.OPEN_STORES_THRESHOLD = 1;
+  const room = 'CACHED_PIN_ROOM';
+  const pinner = new Pinner(room);
+  const pinnerId = await pinner.getId();
+  const { ipfs } = await getIPFSNode(pinnerId);
+  await ipfs.pubsub.subscribe(room, noop);
+  const orbit = await getOrbitNode(ipfs);
+  const store1 = await createKVStore(orbit, 'cached.kvstore1', {
+    foo: 'bar',
+    biz: 'baz',
+  });
+  const store2 = await createKVStore(orbit, 'cached.kvstore2', {
+    foo: 'bar',
+    biz: 'baz',
+  });
+
+  const roomMonitor = new PeerMonitor(ipfs.pubsub, room);
+  // On every new peer we tell everyone that we want to pin the store
+  roomMonitor.on('join', () => {
+    const firstAction = {
+      type: PIN_STORE,
+      payload: { address: store1.address.toString() },
+    };
+    const secondAction = {
+      type: PIN_STORE,
+      payload: { address: store2.address.toString() },
+    };
+    ipfs.pubsub.publish(room, Buffer.from(JSON.stringify(firstAction)));
+    ipfs.pubsub.publish(room, Buffer.from(JSON.stringify(secondAction)));
+  });
+  await pinner.init();
+  await new Promise(resolve => {
+    pinner.on('pinned', msg => {
+      resolve(msg);
+    });
+  });
+  t.is(pinner.countOpenStores(), 1);
+  await ipfs.pubsub.unsubscribe(room, noop);
+  roomMonitor.stop();
+  await orbit.disconnect();
+  await store1.close();
+  await store2.close();
+  process.env.OPEN_STORES_THRESHOLD = openStoresThreshold;
   return pinner.close();
 });
