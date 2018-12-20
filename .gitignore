@@ -1,6 +1,7 @@
 ### Standard stuff
 node_modules
 yarn-error.log
+.env
 
 ### IPFS node data
 data/*
@@ -10,5 +11,3 @@ data/*
 
 ### orbit node data
 orbitdb*
-
-

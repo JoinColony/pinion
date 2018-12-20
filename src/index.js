@@ -1,8 +1,13 @@
+const dotenv = require('dotenv');
+
+if (process.env.NODE_ENV !== 'production') dotenv.config();
+
 const EventEmitter = require('events');
 const { Buffer } = require('buffer');
 
 const debug = require('debug');
 const ipfsClient = require('ipfs-http-client');
+const Cache = require('lru-cache');
 const OrbitDB = require('orbit-db');
 const PeerMonitor = require('ipfs-pubsub-peer-monitor');
 
@@ -12,9 +17,10 @@ const logError = debug('pinner:error');
 const logDebug = debug('pinner:debug');
 const logPubsub = debug('pinner:pubsub');
 
-const ORBITDB_PATH = './orbitdb';
-const DAEMON_URL = '/ip4/127.0.0.1/tcp/5001';
-const PINNING_ROOM = 'COLONY_PINNING_ROOM';
+const closeStoreOnCacheEviction = (address, store) =>
+  store.close().then(() => {
+    logDebug(`Store "${address}" was closed...`);
+  });
 
 /* TODO: we are using the permissive access controller for now, eventually we want to use our access controllers */
 const permissiveAccessController = {
@@ -32,9 +38,16 @@ const permissiveAccessController = {
 class Pinner extends EventEmitter {
   constructor(room) {
     super();
-    this._ipfs = ipfsClient(DAEMON_URL);
-    this._room = room || PINNING_ROOM;
+
+    const { DAEMON_URL, OPEN_STORES_THRESHOLD } = process.env;
+
+    this._ipfs = ipfsClient(DAEMON_URL || '/ip4/127.0.0.1/tcp/5001');
+    this._room = room || 'COLONY_PINNING_ROOM';
     this._handleMessageBound = this._handleMessage.bind(this);
+    this._cache = new Cache({
+      max: Number(OPEN_STORES_THRESHOLD) || 1000,
+      dispose: closeStoreOnCacheEviction,
+    });
   }
 
   _publish(message) {
@@ -97,7 +110,7 @@ class Pinner extends EventEmitter {
     logDebug(`Pinner id: ${this.id}`);
 
     this._orbitNode = await OrbitDB.createInstance(this._ipfs, {
-      directory: ORBITDB_PATH,
+      directory: process.env.ORBITDB_PATH || './orbitdb',
     });
 
     await this._ipfs.pubsub.subscribe(this._room, this._handleMessageBound);
@@ -114,6 +127,10 @@ class Pinner extends EventEmitter {
     return id;
   }
 
+  countOpenStores() {
+    return this._cache.itemCount;
+  }
+
   async close() {
     logDebug('Closing...');
     await this._orbitNode.disconnect();
@@ -128,11 +145,23 @@ class Pinner extends EventEmitter {
   }
 
   async pinStore({ address }) {
+    let store = this._cache.get(address);
+    if (!store) {
+      store = await this._orbitNode.open(address, {
+        accessController: permissiveAccessController,
+      });
+
+      /*
+        @NOTE: If we try to add one more store to the cache, it'll drop the LRU
+        store and close it upon eviction using the store disposal function. Thus
+        limiting the number of open stores to process.env.OPEN_STORES_THRESHOLD
+       */
+      this._cache.set(address, store);
+    }
+
+    logDebug(`Open stores: ${this.countOpenStores()}`);
     logDebug(`Pinning orbit store: ${address}`);
-    const store = await this._orbitNode.open(address, {
-      accessController: permissiveAccessController,
-    });
-    // TODO: race for replicated or timeout
+
     store.events.on(
       'replicate.progress',
       (storeAddress, hash, entry, progress, have) => {
@@ -145,7 +174,6 @@ class Pinner extends EventEmitter {
             this.emit('pinned', address);
           });
           // TODO: keep it open for some time
-          // store.close();
         }
       },
     );
@@ -153,9 +181,21 @@ class Pinner extends EventEmitter {
 
   async loadStore({ address }) {
     logDebug(`Loading orbit store: ${address}`);
-    const store = await this._orbitNode.open(address, {
-      accessController: permissiveAccessController,
-    });
+    let store = this._cache.get(address);
+    if (!store) {
+      store = await this._orbitNode.open(address, {
+        accessController: permissiveAccessController,
+      });
+
+      /*
+        @NOTE: If we try to add one more store to the cache, it'll drop the LRU
+        store and close it upon eviction using the store disposal function. Thus
+        limiting the number of open stores to process.env.OPEN_STORES_THRESHOLD
+       */
+      this._cache.set(address, store);
+    }
+
+    logDebug(`Open stores: ${this.countOpenStores()}`);
     store.events.on('ready', () => this._sendHeads(store));
     await store.load();
     // TODO: race for replicated (shorter timeout) or long timeout
