@@ -102,7 +102,6 @@ test('pinner pins stuff', async t => {
   t.is(pinnedStoreAddress, store.address.toString());
   await ipfs.pubsub.unsubscribe(room, noop);
   await orbit.disconnect();
-  await store.close();
   roomMonitor.stop();
   return pinner.close();
 });
@@ -206,7 +205,6 @@ test('A third peer can request a previously pinned store', async t => {
   roomMonitor2.stop();
   await orbit.disconnect();
   await orbit2.disconnect();
-  await store2.close();
   return pinner.close();
 });
 
