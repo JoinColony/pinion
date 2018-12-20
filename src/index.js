@@ -7,6 +7,7 @@ const { Buffer } = require('buffer');
 
 const debug = require('debug');
 const ipfsClient = require('ipfs-http-client');
+const isIPFS = require('is-ipfs');
 const Cache = require('lru-cache');
 const OrbitDB = require('orbit-db');
 const PeerMonitor = require('ipfs-pubsub-peer-monitor');
@@ -47,10 +48,10 @@ class Pinner extends EventEmitter {
     super();
 
     const { DAEMON_URL, OPEN_STORES_THRESHOLD } = process.env;
-
     this._ipfs = ipfsClient(DAEMON_URL || '/ip4/127.0.0.1/tcp/5001');
     this._room = room || 'COLONY_PINNING_ROOM';
     this._handleMessageBound = this._handleMessage.bind(this);
+
     this._cache = new Cache({
       max: Number(OPEN_STORES_THRESHOLD) || 1000,
       dispose: closeStoreOnCacheEviction,
@@ -83,6 +84,11 @@ class Pinner extends EventEmitter {
   }
 
   _handleMessage(message) {
+    if (!(message && message.from && message.data)) {
+      logError(new Error(`Message is invalid: ${message}`));
+      return;
+    }
+
     // Don't handle messages from ourselves
     if (message.from === this.id) return;
     logPubsub(`New Message from: ${message.from}`);
@@ -139,6 +145,10 @@ class Pinner extends EventEmitter {
   }
 
   getStore(address) {
+    assert(
+      OrbitDB.isValidAddress(address),
+      'Cannot get store using invalid address',
+    );
     const cachedStore = this._cache.get(address);
     return cachedStore && cachedStore.orbitStore;
   }
@@ -152,18 +162,32 @@ class Pinner extends EventEmitter {
   }
 
   async pinHash({ ipfsHash }) {
+    if (!isIPFS.multihash(ipfsHash)) {
+      logError(new Error('IPFS hash is invalid'));
+      return;
+    }
+
     logDebug(`Pinning ipfs hash: ${ipfsHash}`);
     await this._ipfs.pin.add(ipfsHash);
     this.emit('pinnedHash', ipfsHash);
   }
 
   async _openOrbitStore(address) {
+    assert(
+      OrbitDB.isValidAddress(address),
+      'Cannot get store using invalid address',
+    );
     return this._orbitNode.open(address, {
       accessController: permissiveAccessController,
     });
   }
 
   async pinStore({ address }) {
+    if (!OrbitDB.isValidAddress(address)) {
+      logError(new Error(`Cannot pin store using invalid address: ${address}`));
+      return;
+    }
+
     const { _cache: cache } = this;
     let cachedStore = cache.get(address);
     if (!cachedStore) {
@@ -186,6 +210,7 @@ class Pinner extends EventEmitter {
       'replicate.progress',
       (storeAddress, hash, entry, progress, have) => {
         cachedStore.resetTTL();
+        assert(isIPFS.multihash(hash), 'Cannot pin invalid IPFS hash');
         this._ipfs.pin.add(hash).then(() => logDebug(`Pinned hash "${hash}"`));
         if (progress === have) {
           cachedStore.orbitStore.events.on('replicated', () => {
@@ -198,6 +223,13 @@ class Pinner extends EventEmitter {
   }
 
   async loadStore({ address }) {
+    if (!OrbitDB.isValidAddress(address)) {
+      logError(
+        new Error(`Cannot load store using invalid address: ${address}`),
+      );
+      return;
+    }
+
     const { _cache: cache } = this;
     let cachedStore = cache.get(address);
     if (!cachedStore) {
@@ -210,7 +242,8 @@ class Pinner extends EventEmitter {
       */
       cache.set(address, cachedStore);
     } else {
-      return cachedStore.orbitStore.load();
+      cachedStore.resetTTL();
+      return;
     }
 
     logDebug(`Loading orbit store: ${address}`);
@@ -223,7 +256,7 @@ class Pinner extends EventEmitter {
       cachedStore.resetTTL();
     });
 
-    return cachedStore.orbitStore.load();
+    await cachedStore.orbitStore.load();
   }
 }
 
