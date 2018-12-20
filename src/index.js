@@ -12,6 +12,7 @@ const Cache = require('lru-cache');
 const OrbitDB = require('orbit-db');
 const PeerMonitor = require('ipfs-pubsub-peer-monitor');
 
+const CachedStore = require('./cachedStore');
 const { HAVE_HEADS, LOAD_STORE, PIN_HASH, PIN_STORE } = require('./actions');
 
 const logError = debug('pinner:error');
@@ -39,34 +40,6 @@ const permissiveAccessController = {
     return Promise.resolve(true);
   },
 };
-
-class CachedStore {
-  constructor(cache, store) {
-    this.orbitStore = store;
-    this.timeout = setTimeout(
-      () => cache.del(this.orbitStore.address.toString()),
-      Number(process.env.OPEN_STORE_TIMEOUT_MS) || 300000,
-    );
-
-    /*
-      @NOTE: If we try to add one more store to the cache, it'll drop the LRU
-      store and close it upon eviction using the store disposal function. Thus
-      limiting the number of open stores to process.env.OPEN_STORES_THRESHOLD
-    */
-    cache.set(this.orbitStore.address.toString(), this);
-  }
-
-  clearEvictionTimeout() {
-    if (this.timeout) clearTimeout(this.timeout);
-  }
-
-  resetTTL(cache) {
-    this.clearEvictionTimeout();
-    this.timeout = setTimeout(() => {
-      cache.del(this.orbitStore.address.toString());
-    }, Number(process.env.OPEN_STORE_TIMEOUT_MS) || 300000);
-  }
-}
 
 class Pinner extends EventEmitter {
   constructor(room) {
@@ -194,9 +167,15 @@ class Pinner extends EventEmitter {
     let cachedStore = cache.get(address);
     if (!cachedStore) {
       const orbitStore = await this._openOrbitStore(address);
-      cachedStore = new CachedStore(cache, orbitStore);
+      cachedStore = new CachedStore(orbitStore, () => cache.del(address));
+      /*
+       @NOTE: If we try to add one more store to the cache, it'll drop the LRU
+       store and close it upon eviction using the store disposal function. Thus
+       limiting the number of open stores to process.env.OPEN_STORES_THRESHOLD
+      */
+      cache.set(address, cachedStore);
     } else {
-      cachedStore.resetTTL(cache);
+      cachedStore.resetTTL();
       return;
     }
 
@@ -205,7 +184,7 @@ class Pinner extends EventEmitter {
     cachedStore.orbitStore.events.on(
       'replicate.progress',
       (storeAddress, hash, entry, progress, have) => {
-        cachedStore.resetTTL(cache);
+        cachedStore.resetTTL();
         this._ipfs.pin.add(hash).then(() => logDebug(`Pinned hash "${hash}"`));
         if (progress === have) {
           cachedStore.orbitStore.events.on('replicated', () => {
@@ -222,10 +201,15 @@ class Pinner extends EventEmitter {
     let cachedStore = cache.get(address);
     if (!cachedStore) {
       const orbitStore = await this._openOrbitStore(address);
-      cachedStore = new CachedStore(cache, orbitStore);
+      cachedStore = new CachedStore(orbitStore, () => cache.del(address));
+      /*
+       @NOTE: If we try to add one more store to the cache, it'll drop the LRU
+       store and close it upon eviction using the store disposal function. Thus
+       limiting the number of open stores to process.env.OPEN_STORES_THRESHOLD
+      */
+      cache.set(address, cachedStore);
     } else {
-      cachedStore.resetTTL(cache);
-      return;
+      return cachedStore.orbitStore.load();
     }
 
     logDebug(`Loading orbit store: ${address}`);
@@ -238,7 +222,7 @@ class Pinner extends EventEmitter {
       cachedStore.resetTTL();
     });
 
-    await cachedStore.orbitStore.load();
+    return cachedStore.orbitStore.load();
   }
 }
 

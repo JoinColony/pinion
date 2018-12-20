@@ -257,8 +257,6 @@ test('pinner caches stores and limit them to a pre-defined threshold', async t =
 });
 
 test('pinner can close store after timeout', async t => {
-  const storeCleanupTimeout = process.env.OPEN_STORE_TIMEOUT_MS;
-  process.env.OPEN_STORE_TIMEOUT_MS = 5000;
   const room = 'TIMEOUT_PIN_ROOM';
   const pinner = new Pinner(room);
   const pinnerId = await pinner.getId();
@@ -296,6 +294,5 @@ test('pinner can close store after timeout', async t => {
   await ipfs.pubsub.unsubscribe(room, noop);
   await orbit.disconnect();
   roomMonitor.stop();
-  process.env.OPEN_STORE_TIMEOUT_MS = storeCleanupTimeout;
   return pinner.close();
 });
