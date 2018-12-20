@@ -174,6 +174,7 @@ class Pinner extends EventEmitter {
     await this._orbitNode.disconnect();
     await this._ipfs.pubsub.unsubscribe(this._room, this._handleMessageBound);
     this._roomMonitor.stop();
+    this._cache.reset();
   }
 
   async pinHash({ ipfsHash }) {

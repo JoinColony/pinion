@@ -140,7 +140,7 @@ test('A third peer can request a previously pinned store', async t => {
   const { ipfs } = await getIPFSNode(pinnerId);
   await ipfs.pubsub.subscribe(room, noop);
   const orbit = await getOrbitNode(ipfs);
-  const store = await createKVStore(orbit, 'kvstore1', {
+  const store = await createKVStore(orbit, 'load.kvstore1', {
     foo: 'bar',
     biz: 'baz',
   });
