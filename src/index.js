@@ -36,13 +36,13 @@ const permissiveAccessController = {
 };
 
 class Pinner extends EventEmitter {
-  constructor(room) {
+  constructor() {
     super();
 
-    const { DAEMON_URL, OPEN_STORES_THRESHOLD } = process.env;
+    const { PINNING_ROOM, DAEMON_URL, OPEN_STORES_THRESHOLD } = process.env;
 
     this._ipfs = ipfsClient(DAEMON_URL || '/ip4/127.0.0.1/tcp/5001');
-    this._room = room || 'COLONY_PINNING_ROOM';
+    this._room = PINNING_ROOM || 'COLONY_PINNING_ROOM';
     this._handleMessageBound = this._handleMessage.bind(this);
     this._cache = new Cache({
       max: Number(OPEN_STORES_THRESHOLD) || 1000,
