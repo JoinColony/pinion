@@ -2,6 +2,7 @@ const dotenv = require('dotenv');
 
 if (process.env.NODE_ENV !== 'production') dotenv.config();
 
+const assert = require('assert');
 const EventEmitter = require('events');
 const { Buffer } = require('buffer');
 
@@ -46,10 +47,12 @@ class Pinner extends EventEmitter {
   constructor(room) {
     super();
 
+    assert(room && room.length, 'Pinning room is required');
+
     const { DAEMON_URL, OPEN_STORES_THRESHOLD } = process.env;
 
     this._ipfs = ipfsClient(DAEMON_URL || '/ip4/127.0.0.1/tcp/5001');
-    this._room = room || 'COLONY_PINNING_ROOM';
+    this._room = room;
     this._handleMessageBound = this._handleMessage.bind(this);
     this._cache = new Cache({
       max: Number(OPEN_STORES_THRESHOLD) || 1000,

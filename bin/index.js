@@ -1,4 +1,6 @@
 const Pinner = require('../src');
 
-const pinner = new Pinner('COLONY_PINNING_ROOM');
+const [, , room = 'COLONY_PINNING_ROOM'] = process.argv;
+
+const pinner = new Pinner(room);
 pinner.init();
