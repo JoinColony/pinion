@@ -2,7 +2,6 @@ const dotenv = require('dotenv');
 
 if (process.env.NODE_ENV !== 'production') dotenv.config();
 
-const assert = require('assert');
 const EventEmitter = require('events');
 const { Buffer } = require('buffer');
 
@@ -20,10 +19,12 @@ const logDebug = debug('pinner:debug');
 const logPubsub = debug('pinner:pubsub');
 
 function closeStoreOnCacheEviction(address, cachedStore) {
-  assert(!!cachedStore, 'Cached store is invalid');
   logDebug(`Cleaning up and closing store "${address}"!`);
+  if (!(cachedStore && cachedStore.orbitStore))
+    return logError('Cached store is invalid');
+
   cachedStore.clearEvictionTimeout();
-  cachedStore.orbitStore
+  return cachedStore.orbitStore
     .close()
     .then(() => logDebug(`Store "${address}" was closed...`));
 }
