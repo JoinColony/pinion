@@ -31,13 +31,13 @@ Pinion can:
 To install pinion, run:
 
 ```bash
-yarn add global @joincolony/pinion
+yarn add global @colony/pinion
 ```
 
 or
 
 ```bash
-npm i -g @joincolony/pinion
+npm i -g @colony/pinion
 ```
 
 And then run pinion passing a IPFS node endpoint and a pinning room:
