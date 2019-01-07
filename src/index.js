@@ -85,7 +85,7 @@ class Pinner extends EventEmitter {
 
   _handleMessage(message) {
     if (!(message && message.from && message.data)) {
-      logError(new Error(`Message is invalid: ${message}`));
+      logError(`Message is invalid: ${message}`);
       return;
     }
 
@@ -97,8 +97,10 @@ class Pinner extends EventEmitter {
     try {
       action = JSON.parse(message.data);
     } catch (e) {
-      logError(new Error(`Could not parse pinner message: ${message.data}`));
+      logError(`Could not parse pinner message: ${message.data}`);
     }
+
+    if (!action) return;
     const { type, payload } = action;
     switch (type) {
       case PIN_HASH: {
@@ -145,10 +147,9 @@ class Pinner extends EventEmitter {
   }
 
   getStore(address) {
-    assert(
-      OrbitDB.isValidAddress(address),
-      'Cannot get store using invalid address',
-    );
+    if (!OrbitDB.isValidAddress(address))
+      return logError('Cannot get store using invalid address');
+
     const cachedStore = this._cache.get(address);
     return cachedStore && cachedStore.orbitStore;
   }
@@ -163,7 +164,7 @@ class Pinner extends EventEmitter {
 
   async pinHash({ ipfsHash }) {
     if (!isIPFS.multihash(ipfsHash)) {
-      logError(new Error('IPFS hash is invalid'));
+      logError('IPFS hash is invalid');
       return;
     }
 
@@ -173,10 +174,9 @@ class Pinner extends EventEmitter {
   }
 
   async _openOrbitStore(address) {
-    assert(
-      OrbitDB.isValidAddress(address),
-      'Cannot get store using invalid address',
-    );
+    if (!OrbitDB.isValidAddress(address))
+      return logError('Cannot open store using invalid address');
+
     return this._orbitNode.open(address, {
       accessController: permissiveAccessController,
     });
@@ -184,7 +184,7 @@ class Pinner extends EventEmitter {
 
   async pinStore({ address }) {
     if (!OrbitDB.isValidAddress(address)) {
-      logError(new Error(`Cannot pin store using invalid address: ${address}`));
+      logError(`Cannot pin store using invalid address: ${address}`);
       return;
     }
 
@@ -209,14 +209,19 @@ class Pinner extends EventEmitter {
     cachedStore.orbitStore.events.on(
       'replicate.progress',
       (storeAddress, hash, entry, progress, have) => {
-        cachedStore.resetTTL();
-        assert(isIPFS.multihash(hash), 'Cannot pin invalid IPFS hash');
-        this._ipfs.pin.add(hash).then(() => logDebug(`Pinned hash "${hash}"`));
-        if (progress === have) {
-          cachedStore.orbitStore.events.on('replicated', () => {
-            logDebug(`Store "${address}" replicated`);
-            this.emit('pinned', address);
-          });
+        if (!isIPFS.multihash(hash)) {
+          logError('Cannot pin invalid IPFS hash');
+        } else {
+          cachedStore.resetTTL();
+          this._ipfs.pin
+            .add(hash)
+            .then(() => logDebug(`Pinned hash "${hash}"`));
+          if (progress === have) {
+            cachedStore.orbitStore.events.on('replicated', () => {
+              logDebug(`Store "${address}" replicated`);
+              this.emit('pinned', address);
+            });
+          }
         }
       },
     );
