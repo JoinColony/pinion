@@ -11,16 +11,23 @@ const Cache = require('lru-cache');
 const OrbitDB = require('orbit-db');
 const PeerMonitor = require('ipfs-pubsub-peer-monitor');
 
+const CachedStore = require('./cachedStore');
 const { HAVE_HEADS, LOAD_STORE, PIN_HASH, PIN_STORE } = require('./actions');
 
 const logError = debug('pinner:error');
 const logDebug = debug('pinner:debug');
 const logPubsub = debug('pinner:pubsub');
 
-const closeStoreOnCacheEviction = (address, store) =>
-  store.close().then(() => {
-    logDebug(`Store "${address}" was closed...`);
-  });
+function closeStoreOnCacheEviction(address, cachedStore) {
+  logDebug(`Cleaning up and closing store "${address}"!`);
+  if (!(cachedStore && cachedStore.orbitStore))
+    return logError('Cached store is invalid');
+
+  cachedStore.clearEvictionTimeout();
+  return cachedStore.orbitStore
+    .close()
+    .then(() => logDebug(`Store "${address}" was closed...`));
+}
 
 /* TODO: we are using the permissive access controller for now, eventually we want to use our access controllers */
 const permissiveAccessController = {
@@ -131,11 +138,17 @@ class Pinner extends EventEmitter {
     return this._cache.itemCount;
   }
 
+  getStore(address) {
+    const cachedStore = this._cache.get(address);
+    return cachedStore && cachedStore.orbitStore;
+  }
+
   async close() {
     logDebug('Closing...');
     await this._orbitNode.disconnect();
     await this._ipfs.pubsub.unsubscribe(this._room, this._handleMessageBound);
     this._roomMonitor.stop();
+    this._cache.reset();
   }
 
   async pinHash({ ipfsHash }) {
@@ -144,61 +157,73 @@ class Pinner extends EventEmitter {
     this.emit('pinnedHash', ipfsHash);
   }
 
-  async pinStore({ address }) {
-    let store = this._cache.get(address);
-    if (!store) {
-      store = await this._orbitNode.open(address, {
-        accessController: permissiveAccessController,
-      });
+  async _openOrbitStore(address) {
+    return this._orbitNode.open(address, {
+      accessController: permissiveAccessController,
+    });
+  }
 
+  async pinStore({ address }) {
+    const { _cache: cache } = this;
+    let cachedStore = cache.get(address);
+    if (!cachedStore) {
+      const orbitStore = await this._openOrbitStore(address);
+      cachedStore = new CachedStore(orbitStore, () => cache.del(address));
       /*
-        @NOTE: If we try to add one more store to the cache, it'll drop the LRU
-        store and close it upon eviction using the store disposal function. Thus
-        limiting the number of open stores to process.env.OPEN_STORES_THRESHOLD
-       */
-      this._cache.set(address, store);
+       @NOTE: If we try to add one more store to the cache, it'll drop the LRU
+       store and close it upon eviction using the store disposal function. Thus
+       limiting the number of open stores to process.env.OPEN_STORES_THRESHOLD
+      */
+      cache.set(address, cachedStore);
+    } else {
+      cachedStore.resetTTL();
+      return;
     }
 
-    logDebug(`Open stores: ${this.countOpenStores()}`);
     logDebug(`Pinning orbit store: ${address}`);
-
-    store.events.on(
+    logDebug(`Open stores: ${this.countOpenStores()}`);
+    cachedStore.orbitStore.events.on(
       'replicate.progress',
       (storeAddress, hash, entry, progress, have) => {
-        this._ipfs.pin.add(hash);
-        // TODO: pin on infura:
-        // https://infura.io/docs/ipfs/get/pin_add
-        // https://ipfs.infura.io:5001/api/v0/pin/add?arg=<ipfs-path>&recursive=true&progress=<value>
+        cachedStore.resetTTL();
+        this._ipfs.pin.add(hash).then(() => logDebug(`Pinned hash "${hash}"`));
         if (progress === have) {
-          store.events.on('replicated', () => {
+          cachedStore.orbitStore.events.on('replicated', () => {
+            logDebug(`Store "${address}" replicated`);
             this.emit('pinned', address);
           });
-          // TODO: keep it open for some time
         }
       },
     );
   }
 
   async loadStore({ address }) {
-    logDebug(`Loading orbit store: ${address}`);
-    let store = this._cache.get(address);
-    if (!store) {
-      store = await this._orbitNode.open(address, {
-        accessController: permissiveAccessController,
-      });
-
+    const { _cache: cache } = this;
+    let cachedStore = cache.get(address);
+    if (!cachedStore) {
+      const orbitStore = await this._openOrbitStore(address);
+      cachedStore = new CachedStore(orbitStore, () => cache.del(address));
       /*
-        @NOTE: If we try to add one more store to the cache, it'll drop the LRU
-        store and close it upon eviction using the store disposal function. Thus
-        limiting the number of open stores to process.env.OPEN_STORES_THRESHOLD
-       */
-      this._cache.set(address, store);
+       @NOTE: If we try to add one more store to the cache, it'll drop the LRU
+       store and close it upon eviction using the store disposal function. Thus
+       limiting the number of open stores to process.env.OPEN_STORES_THRESHOLD
+      */
+      cache.set(address, cachedStore);
+    } else {
+      return cachedStore.orbitStore.load();
     }
 
+    logDebug(`Loading orbit store: ${address}`);
     logDebug(`Open stores: ${this.countOpenStores()}`);
-    store.events.on('ready', () => this._sendHeads(store));
-    await store.load();
-    // TODO: race for replicated (shorter timeout) or long timeout
+    cachedStore.orbitStore.events.on('ready', () =>
+      this._sendHeads(cachedStore.orbitStore),
+    );
+    cachedStore.orbitStore.events.on('replicated', () => {
+      this.emit('loadedStore', address);
+      cachedStore.resetTTL();
+    });
+
+    return cachedStore.orbitStore.load();
   }
 }
 

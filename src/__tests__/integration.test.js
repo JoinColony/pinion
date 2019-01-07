@@ -102,7 +102,6 @@ test('pinner pins stuff', async t => {
   t.is(pinnedStoreAddress, store.address.toString());
   await ipfs.pubsub.unsubscribe(room, noop);
   await orbit.disconnect();
-  await store.close();
   roomMonitor.stop();
   return pinner.close();
 });
@@ -141,7 +140,7 @@ test('A third peer can request a previously pinned store', async t => {
   const { ipfs } = await getIPFSNode(pinnerId);
   await ipfs.pubsub.subscribe(room, noop);
   const orbit = await getOrbitNode(ipfs);
-  const store = await createKVStore(orbit, 'kvstore1', {
+  const store = await createKVStore(orbit, 'load.kvstore1', {
     foo: 'bar',
     biz: 'baz',
   });
@@ -206,7 +205,6 @@ test('A third peer can request a previously pinned store', async t => {
   roomMonitor2.stop();
   await orbit.disconnect();
   await orbit2.disconnect();
-  await store2.close();
   return pinner.close();
 });
 
@@ -255,5 +253,46 @@ test('pinner caches stores and limit them to a pre-defined threshold', async t =
   await store1.close();
   await store2.close();
   process.env.OPEN_STORES_THRESHOLD = openStoresThreshold;
+  return pinner.close();
+});
+
+test('pinner can close store after timeout', async t => {
+  const room = 'TIMEOUT_PIN_ROOM';
+  const pinner = new Pinner(room);
+  const pinnerId = await pinner.getId();
+  const { ipfs } = await getIPFSNode(pinnerId);
+  await ipfs.pubsub.subscribe(room, noop);
+  const orbit = await getOrbitNode(ipfs);
+  const store = await createKVStore(orbit, 'timeout.kvstore1', {
+    foo: 'bar',
+    biz: 'baz',
+  });
+  const roomMonitor = new PeerMonitor(ipfs.pubsub, room);
+  // On every new peer we tell everyone that we want to pin the store
+  roomMonitor.on('join', () => {
+    const action = {
+      type: PIN_STORE,
+      payload: { address: store.address.toString() },
+    };
+    ipfs.pubsub.publish(room, Buffer.from(JSON.stringify(action)));
+  });
+  await pinner.init();
+  const pinnedStoreAddress = await new Promise(resolve => {
+    pinner.on('pinned', msg => {
+      resolve(msg);
+    });
+  });
+  t.is(pinnedStoreAddress, store.address.toString());
+  const pinnedStore = pinner.getStore(store.address.toString());
+  t.truthy(pinnedStore && pinnedStore.address);
+  await new Promise(resolve => {
+    pinnedStore.options.onClose = () => {
+      resolve();
+    };
+  });
+
+  await ipfs.pubsub.unsubscribe(room, noop);
+  await orbit.disconnect();
+  roomMonitor.stop();
   return pinner.close();
 });
