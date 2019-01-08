@@ -100,6 +100,39 @@ test('pinner pins stuff', async t => {
     ipfs.pubsub.publish(room, Buffer.from(JSON.stringify(action)));
   });
   await pinner.init();
+  const pinnedStoreAddress = await new Promise(resolve => {
+    pinner.on('pinned', msg => {
+      resolve(msg);
+    });
+  });
+  t.is(pinnedStoreAddress, store.address.toString());
+  await ipfs.pubsub.unsubscribe(room, noop);
+  await orbit.disconnect();
+  roomMonitor.stop();
+  return pinner.close();
+});
+
+test('pinner responds upon replication event', async t => {
+  const room = 'REPLICATED_PIN_ROOM';
+  const pinner = new Pinner(room);
+  const pinnerId = await pinner.getId();
+  const { ipfs } = await getIPFSNode(pinnerId);
+  await ipfs.pubsub.subscribe(room, noop);
+  const orbit = await getOrbitNode(ipfs);
+  const store = await createKVStore(orbit, 'replicated.kvstore1', {
+    foo: 'bar',
+    biz: 'baz',
+  });
+  const roomMonitor = new PeerMonitor(ipfs.pubsub, room);
+  // On every new peer we tell everyone that we want to pin the store
+  roomMonitor.on('join', () => {
+    const action = {
+      type: PIN_STORE,
+      payload: { address: store.address.toString() },
+    };
+    ipfs.pubsub.publish(room, Buffer.from(JSON.stringify(action)));
+  });
+  await pinner.init();
   const gotReplicated = await new Promise(resolve => {
     ipfs.pubsub.subscribe(room, msg => {
       const {
@@ -111,12 +144,6 @@ test('pinner pins stuff', async t => {
     });
   });
   t.truthy(gotReplicated);
-  const pinnedStoreAddress = await new Promise(resolve => {
-    pinner.on('pinned', msg => {
-      resolve(msg);
-    });
-  });
-  t.is(pinnedStoreAddress, store.address.toString());
   await ipfs.pubsub.unsubscribe(room, noop);
   await orbit.disconnect();
   roomMonitor.stop();

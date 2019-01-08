@@ -77,9 +77,9 @@ class Pinner extends EventEmitter {
   _sendHeads(store) {
     this._publish({
       type: HAVE_HEADS,
-      to: store.address,
+      to: store.address.toString(),
       payload: {
-        address: store.address,
+        address: store.address.toString(),
         // eslint-disable-next-line no-underscore-dangle
         count: store._oplog._length,
         timestamp: Date.now(),
@@ -90,9 +90,9 @@ class Pinner extends EventEmitter {
   _announceReplicatedStore(store) {
     this._publish({
       type: REPLICATED,
-      to: store.address,
+      to: store.address.toString(),
       payload: {
-        address: store.address,
+        address: store.address.toString(),
         // eslint-disable-next-line no-underscore-dangle
         count: store._oplog._length,
         timestamp: Date.now(),
