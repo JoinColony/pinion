@@ -141,7 +141,11 @@ Published when the pinner has opened a store and it's ready
  {
    type: 'HAVE_HEADS',
    to: '/orbitdb/Qma=/my-store/<signature>',
-   payload: { address: '/orbitdb/Qma=/my-store/<signature>', count: 100 },
+   payload: {
+     address: '/orbitdb/Qma=/my-store/<signature>',
+     count: 100,
+     timestamp: 10010203993
+  },
  }
 ```
 
@@ -149,7 +153,7 @@ Published when the pinner has opened a store and it's ready
 
 ##### ACK
 
-Published on every incoming message, acknowledging we got it
+Published on every incoming message, acknowledging we got it with either the `ipfsHash` or the orbit-db store address
 
 ##### Payload example
 
@@ -157,7 +161,33 @@ Published on every incoming message, acknowledging we got it
  {
    type: 'ACK',
    to: 'Qma=',
-   payload: { actionType: 'PIN_STORE', address: '/orbitdb/Qma=/my-store/<signature>', ipfsHash: 'Qma=...', timestamp: 100 },
+   payload: {
+     sender: 'Qma=',
+     actionType: 'PIN_STORE',
+     address: '/orbitdb/Qma=/my-store/<signature>',
+     ipfsHash: 'Qma=...',
+     timestamp: 10010203993
+   },
+ }
+```
+
+---
+
+##### REPLICATED
+
+Published after a store is fully replicated
+
+##### Payload example
+
+```js
+ {
+   type: 'REPLICATED',
+   to: '/orbitdb/Qma=/my-store/<signature>',
+   payload: {
+     address: '/orbitdb/Qma=/my-store/<signature>',
+     count: 100,
+     timestamp: 10010203993
+   },
  }
 ```
 

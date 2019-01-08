@@ -7,7 +7,13 @@ const OrbitDB = require('orbit-db');
 const { create: createIPFS } = require('ipfsd-ctl');
 
 const Pinner = require('..');
-const { ACK, LOAD_STORE, PIN_HASH, PIN_STORE } = require('../actions');
+const {
+  ACK,
+  LOAD_STORE,
+  PIN_HASH,
+  PIN_STORE,
+  REPLICATED,
+} = require('../actions');
 
 const noop = () => {};
 
@@ -94,6 +100,17 @@ test('pinner pins stuff', async t => {
     ipfs.pubsub.publish(room, Buffer.from(JSON.stringify(action)));
   });
   await pinner.init();
+  const gotReplicated = await new Promise(resolve => {
+    ipfs.pubsub.subscribe(room, msg => {
+      const {
+        type,
+        payload: { address },
+      } = JSON.parse(msg.data);
+      if (type === REPLICATED && address === store.address.toString())
+        resolve(true);
+    });
+  });
+  t.truthy(gotReplicated);
   const pinnedStoreAddress = await new Promise(resolve => {
     pinner.on('pinned', msg => {
       resolve(msg);
