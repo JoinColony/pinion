@@ -2,8 +2,19 @@
 
 ## Requirements
 
-- IPFS node running (using go-ipfs)
-- Secure websocket reverse proxy (to connect to our pinning service since `js-ipfs` can't swarm properly yet) \*
+- Node (v10.x.x)
+- IPFS node running (using go-ipfs) \*
+
+* You will probably need a secure websocket reverse proxy if you're running on `js-ipfs` since it doesn't play well with `go-ipfs` yet. If you're using a websocket reverse proxy, make sure IPFS node and wss can talk to each other:
+
+```json
+"Swarm": [
+  "/ip4/0.0.0.0/tcp/4001",
+  "/ip6/::/tcp/4001",
+  "/ip4/0.0.0.0/tcp/4003/ws", <<<<< Proxy listening to it
+  "/ip6/::/tcp/4003/ws"       <<<<< Proxy listening to it
+]
+```
 
 ## Usage
 
@@ -27,19 +38,8 @@ You can specify for how long pinion keeps a store open before it's closed. The l
 
 #### DAEMON_URL
 
-You can specify the an IPFS node url of your preference. The default is `/ip4/127.0.0.1/tcp/5001`
+You can specify the an IPFS node url as you see fit. The default is `/ip4/127.0.0.1/tcp/5001`
 
 #### ORBITDB_PATH
 
 You can specify the orbit-db path option so stores data are kept in the place of your preference. The default is `./orbitdb`
-
-- Make sure IPFS node and wss can talk to each other:
-
-```json
-"Swarm": [
-  "/ip4/0.0.0.0/tcp/4001",
-  "/ip6/::/tcp/4001",
-  "/ip4/0.0.0.0/tcp/4003/ws", <<<<<
-  "/ip6/::/tcp/4003/ws"       <<<<<
-]
-```
