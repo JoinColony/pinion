@@ -147,6 +147,22 @@ Published when the pinner has opened a store and it's ready
 
 ---
 
+##### ACK
+
+Published on every incoming message, acknowledging we got it
+
+##### Payload example
+
+```js
+ {
+   type: 'ACK',
+   to: 'Qma=',
+   payload: { actionType: 'PIN_STORE', address: '/orbitdb/Qma=/my-store/<signature>', ipfsHash: 'Qma=...', timestamp: 100 },
+ }
+```
+
+---
+
 ## Contributing
 
 We welcome all contributions to Pinion. You can help by testing, suggesting new features, improving performance or documentation.
