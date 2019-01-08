@@ -5,7 +5,7 @@
 - Node (v10.x.x)
 - IPFS node running (using go-ipfs) \*
 
-* You will probably need a secure websocket reverse proxy if you're running on `js-ipfs` since it doesn't play well with `go-ipfs` yet. If you're using a websocket reverse proxy, make sure IPFS node and wss can talk to each other:
+* You will probably need a secure websocket reverse proxy (namely, a star server) if you're running on `js-ipfs` since it doesn't play well with `go-ipfs` yet. If you do, make sure `js-ipfs` and the websocket can talk to each other:
 
 ```json
 "Swarm": [
