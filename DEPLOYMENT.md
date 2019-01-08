@@ -18,7 +18,13 @@
 
 ## Usage
 
-Install pinion globally, set the environment variables for the IPFS node and then run it passing a pinning room as an argument, otherwise, it will use `COLONY_PINNING_ROOM`:
+Install pinion, set the environment variables for the IPFS node and then run it passing a pinning room as an argument, otherwise, it will use `COLONY_PINNING_ROOM`:
+
+```bash
+npm i -g @colony/pinion
+# make sure env variables are defined ;)
+pinion 'COLONY_PINNING_ROOM'
+```
 
 ```bash
 yarn add global @colony/pinion
