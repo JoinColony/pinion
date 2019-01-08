@@ -14,7 +14,13 @@ const OrbitDB = require('orbit-db');
 const PeerMonitor = require('ipfs-pubsub-peer-monitor');
 
 const CachedStore = require('./cachedStore');
-const { HAVE_HEADS, LOAD_STORE, PIN_HASH, PIN_STORE } = require('./actions');
+const {
+  ACK,
+  HAVE_HEADS,
+  LOAD_STORE,
+  PIN_HASH,
+  PIN_STORE,
+} = require('./actions');
 
 const logError = debug('pinner:error');
 const logDebug = debug('pinner:debug');
@@ -76,6 +82,20 @@ class Pinner extends EventEmitter {
     });
   }
 
+  _sendACK(actionType, sender, storeAddress, ipfsHash) {
+    this._publish({
+      type: ACK,
+      to: sender,
+      payload: {
+        actionType,
+        sender,
+        address: storeAddress,
+        ipfsHash,
+        timestamp: Date.now(),
+      },
+    });
+  }
+
   _handleNewPeer(peer) {
     logPubsub(`New peer: ${peer}`);
     this.emit('newpeer', peer);
@@ -105,6 +125,10 @@ class Pinner extends EventEmitter {
 
     if (!action) return;
     const { type, payload } = action;
+    const { hash, address } = payload;
+    // Send ACK
+    this._sendACK(type, message.from, address, hash);
+
     switch (type) {
       case PIN_HASH: {
         this.pinHash(payload);
