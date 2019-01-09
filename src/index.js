@@ -20,6 +20,7 @@ const {
   LOAD_STORE,
   PIN_HASH,
   PIN_STORE,
+  REPLICATED,
 } = require('./actions');
 
 const logError = debug('pinner:error');
@@ -76,9 +77,26 @@ class Pinner extends EventEmitter {
   _sendHeads(store) {
     this._publish({
       type: HAVE_HEADS,
-      to: store.address,
-      // eslint-disable-next-line no-underscore-dangle
-      payload: { address: store.address, count: store._oplog._length },
+      to: store.address.toString(),
+      payload: {
+        address: store.address.toString(),
+        // eslint-disable-next-line no-underscore-dangle
+        count: store._oplog._length,
+        timestamp: Date.now(),
+      },
+    });
+  }
+
+  _announceReplicatedStore(store) {
+    this._publish({
+      type: REPLICATED,
+      to: store.address.toString(),
+      payload: {
+        address: store.address.toString(),
+        // eslint-disable-next-line no-underscore-dangle
+        count: store._oplog._length,
+        timestamp: Date.now(),
+      },
     });
   }
 
@@ -247,6 +265,7 @@ class Pinner extends EventEmitter {
             cachedStore.orbitStore.events.on('replicated', () => {
               logDebug(`Store "${address}" replicated`);
               this.emit('pinned', address);
+              this._announceReplicatedStore(cachedStore.orbitStore);
             });
           }
         }
