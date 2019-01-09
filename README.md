@@ -78,7 +78,7 @@ Opens a store, keeps listening to it for a pre-defined timeout and pin its conte
 
 ##### Parameters
 
-1.  `OrbitDBAddress` - An orbit-db-store address. Emits a `pinned` event passing the store address back.
+1.  `address` - An orbit-db-store address. Emits a `pinned` event passing the store address back.
 
 ##### Payload example
 
@@ -97,7 +97,7 @@ Opens a store, loads it and keep listening to it for a pre-defined timeout.
 
 ##### Parameters
 
-1.  `OrbitDBAddress` - An orbit-db-store address. Emits a `loadedStore` event passing the store address back.
+1.  `address` - An orbit-db-store address. Emits a `loadedStore` event passing the store address back.
 
 ##### Payload example
 
