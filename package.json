@@ -9,8 +9,8 @@
   "scripts": {
     "test": "ava",
     "lint": "eslint --fix src",
-    "ipfsd": "docker run -d --name ipfs_host -v $(pwd)/data:/data/ipfs -p 4001:4001 -p 4003:4003 -p 127.0.0.1:8080:8080 -p 127.0.0.1:5001:5001 ipfs/go-ipfs:latest daemon --enable-pubsub-experiment",
-    "ipfsd:clean": "docker rm ipfs_host --force",
+    "ipfsd": "docker run -v $(pwd)/data:/data/ipfs -p 4001:4001 -p 4003:4003 -p 127.0.0.1:8080:8080 -p 127.0.0.1:5001:5001 ipfs/go-ipfs:v0.4.20 daemon --enable-pubsub-experiment",
+    "start": "bin/index.js",
     "test:ci": "wait-on tcp:5001 && yarn test --tap | tap-xunit > reports/ava/ava-results.xml"
   },
   "keywords": [
