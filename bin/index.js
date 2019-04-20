@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 const Pinner = require('../src');
 
 const [, , room = 'COLONY_PINNING_ROOM'] = process.argv;
