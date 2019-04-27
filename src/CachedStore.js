@@ -1,4 +1,3 @@
-/* @flow */
 class CachedStore {
   constructor(orbitStore, onTimeout) {
     this.orbitStore = orbitStore;

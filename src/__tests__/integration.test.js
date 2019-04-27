@@ -14,6 +14,8 @@ const {
   PIN_STORE,
   REPLICATED,
 } = require('../actions');
+const AccessControllers = require('../AccessControllers');
+const PermissiveAccessController = require('../PermissiveAccessController');
 
 const noop = () => {};
 
@@ -46,10 +48,16 @@ const getIPFSNode = async pinnerId => {
 const getOrbitNode = async ipfs =>
   OrbitDB.createInstance(ipfs, {
     directory: `./orbitdb-test-data/test-${Math.round(Math.random() * 100000)}`,
+    AccessControllers,
   });
 
 const createKVStore = async (orbitNode, storeIdentifier, data = {}) => {
-  const store = await orbitNode.kvstore(storeIdentifier);
+  const store = await orbitNode.kvstore(storeIdentifier, {
+    // @Note the access controller doesn't really matter, because of a bug in
+    // orbit we still have to use the same one, as we share the OrbitDB module
+    // in the tests
+    accessController: { controller: new PermissiveAccessController() },
+  });
   const keys = Object.keys(data);
   for (let i = 0; i < keys.length; i += 1) {
     // eslint-disable-next-line no-await-in-loop
@@ -86,10 +94,11 @@ test('pinner pins stuff', async t => {
   const { ipfs } = await getIPFSNode(pinnerId);
   await ipfs.pubsub.subscribe(room, noop);
   const orbit = await getOrbitNode(ipfs);
-  const store = await createKVStore(orbit, 'kvstore1', {
+  const storeData = {
     foo: 'bar',
     biz: 'baz',
-  });
+  };
+  const store = await createKVStore(orbit, 'kvstore1', storeData);
   const roomMonitor = new PeerMonitor(ipfs.pubsub, room);
   // On every new peer we tell everyone that we want to pin the store
   roomMonitor.on('join', () => {
@@ -100,12 +109,22 @@ test('pinner pins stuff', async t => {
     ipfs.pubsub.publish(room, Buffer.from(JSON.stringify(action)));
   });
   await pinner.init();
-  const pinnedStoreAddress = await new Promise(resolve => {
-    pinner.on('pinned', msg => {
-      resolve(msg);
+  const pinnedStoreData = await new Promise(resolve => {
+    pinner.on('pinned', async (address, heads) => {
+      // @Note this uses internal APIs so this may break any minute
+      // BUT it's the only way to test whether all the data was pinned
+      const nextHead = await ipfs.dag.get(heads[0].next);
+      const result = [heads[0].payload, nextHead.value.payload].reduce(
+        (data, current) => {
+          data[current.key] = current.value;
+          return data;
+        },
+        {},
+      );
+      resolve(result);
     });
   });
-  t.is(pinnedStoreAddress, store.address.toString());
+  t.deepEqual(pinnedStoreData, storeData);
   await ipfs.pubsub.unsubscribe(room, noop);
   await orbit.disconnect();
   roomMonitor.stop();
@@ -262,7 +281,9 @@ test('A third peer can request a previously pinned store', async t => {
     ipfs2.pubsub.publish(room, Buffer.from(JSON.stringify(action)));
   });
 
-  const store2 = await orbit2.open(store.address.toString());
+  const store2 = await orbit2.open(store.address.toString(), {
+    accessController: { controller: new PermissiveAccessController() },
+  });
 
   await new Promise(resolve =>
     store2.events.on(
