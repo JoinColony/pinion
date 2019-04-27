@@ -269,8 +269,13 @@ test('A third peer can request a previously pinned store', async t => {
 
   const { ipfs: ipfs2 } = await getIPFSNode(pinnerId);
   await ipfs2.pubsub.subscribe(room, noop);
-  const roomMonitor2 = new PeerMonitor(ipfs2.pubsub, room);
+
   const orbit2 = await getOrbitNode(ipfs2);
+  const store2 = await orbit2.open(store.address.toString(), {
+    accessController: { controller: new PermissiveAccessController() },
+  });
+
+  const roomMonitor2 = new PeerMonitor(ipfs2.pubsub, room);
 
   // On every new peer we tell everyone that we want to load the store
   roomMonitor2.on('join', () => {
@@ -281,29 +286,7 @@ test('A third peer can request a previously pinned store', async t => {
     ipfs2.pubsub.publish(room, Buffer.from(JSON.stringify(action)));
   });
 
-  const store2 = await orbit2.open(store.address.toString(), {
-    accessController: { controller: new PermissiveAccessController() },
-  });
-
-  await new Promise(resolve =>
-    store2.events.on(
-      'replicate.progress',
-      (storeAddress, hash, entry, progress, have) => {
-        if (progress === have) {
-          const interval = setInterval(() => {
-            // Related to https://github.com/orbitdb/orbit-db/issues/509
-            // We have to do some weird checks in order to know when we're actually ready
-            if (
-              store2.replicationStatus.progress === store2.replicationStatus.max
-            ) {
-              clearInterval(interval);
-              resolve();
-            }
-          }, 1000);
-        }
-      },
-    ),
-  );
+  await new Promise(resolve => store2.events.on('peer.exchanged', resolve));
 
   const data = store2.get('foo');
   t.is(data, 'bar');
