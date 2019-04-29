@@ -1,18 +1,20 @@
 <div align="center">
-  <img src="/docs/img/pinion_color.svg" width="600" />
+  <img src="/docs/img/pinion_color.svg" width="600" "Pinion Logo" />
 </div>
 <div align="center">
   <a href="https://circleci.com/gh/JoinColony/pinion">
-    <img src="https://circleci.com/gh/JoinColony/pinion.svg?style=shield" />
+    <img src="https://circleci.com/gh/JoinColony/pinion.svg?style=shield"
+    title="CircleCi"/>
   </a>
-  <a href="https://greenkeeper.io/">
-    <img src="https://badges.greenkeeper.io/JoinColony/pinion.svg" />
+  <a href="https://renovatebot.com/">
+    <img src="https://img.shields.io/badge/renovate-enabled-brightgreen.svg"
+    title="Renovate enabled" />
   </a>
   <a href="https://gitter.im/JoinColony/pinion">
-    <img src="https://img.shields.io/gitter/room/TechnologyAdvice/Stardust.svg" />
+    <img src="https://img.shields.io/gitter/room/TechnologyAdvice/Stardust.svg" title="Join us on gitter" />
   </a>
   <a href="https://build.colony.io/">
-    <img src="https://img.shields.io/discourse/https/build.colony.io/status.svg" />
+    <img src="https://img.shields.io/discourse/https/build.colony.io/status.svg" title="Contribute!" />
   </a>
 </div>
 
