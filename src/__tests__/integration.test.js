@@ -18,6 +18,8 @@ const {
 const AccessControllers = require('../AccessControllers');
 const PermissiveAccessController = require('../PermissiveAccessController');
 
+const { TEST_NODE_URL = '/ip4/127.0.0.1/tcp/4001/ipfs' } = process.env;
+
 const noop = () => {};
 const getId = () => randomBytes(16).toString('hex');
 const publishMessage = async (ipfs, room, action) => {
@@ -40,7 +42,7 @@ const getIPFSNode = async pinnerId => {
         ],
       },
       // Bootstrap with our pinner node
-      Bootstrap: [`/ip4/127.0.0.1/tcp/4001/ipfs/${pinnerId}`],
+      Bootstrap: [`${TEST_NODE_URL}/${pinnerId}`],
     },
     start: false,
   });

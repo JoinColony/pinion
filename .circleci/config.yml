@@ -30,6 +30,10 @@ jobs:
           key: v1-dependencies-{{ checksum "package.json" }}
       - run:
           name: "Running Tests"
+          environment:
+            DAEMON_URL: /ip4/127.0.0.1/tcp/5002
+            TEST_NODE_URL: /ip4/127.0.0.1/tcp/4002/ipfs
+            CI_API_PORT: 5002
           command: |
             mkdir -p reports/ava
             yarn test:ci
@@ -63,6 +67,8 @@ jobs:
           key: v1-dependencies-{{ checksum "package.json" }}
       - run:
           name: "Running Tests"
+          environment:
+            CI_API_PORT: 5001
           command: |
             mkdir -p reports/ava
             yarn test:ci
@@ -77,3 +83,4 @@ workflows:
     jobs:
       - test-js-ipfs
       - test-go-ipfs
+
