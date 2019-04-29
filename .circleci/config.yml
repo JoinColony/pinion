@@ -4,10 +4,10 @@
 #
 version: 2
 jobs:
-  build:
+  test-js-ipfs:
     docker:
       - image: circleci/node:10.14
-      - image: colony/js-ipfs:latest
+      - image: joincolony/js-ipfs:latest
         command: daemon --enable-pubsub-experiment
 
     working_directory: ~/pinion
@@ -37,3 +37,43 @@ jobs:
           path: reports
       - store_artifacts:
           path: reports
+  test-go-ipfs:
+    docker:
+      - image: circleci/node:10.14
+      - image: ipfs/go-ipfs:latest
+        command: daemon --enable-pubsub-experiment
+
+    working_directory: ~/pinion
+
+    steps:
+      - checkout
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "package.json" }}
+          # fallback to using the latest cache if no exact match is found
+          - v1-dependencies-
+
+      - run: yarn install
+
+      - save_cache:
+          paths:
+            - node_modules
+          key: v1-dependencies-{{ checksum "package.json" }}
+      - run:
+          name: "Running Tests"
+          command: |
+            mkdir -p reports/ava
+            yarn test:ci
+      - store_test_results:
+          path: reports
+      - store_artifacts:
+          path: reports
+
+workflows:
+  version: 2
+  commit:
+    jobs:
+      - test-js-ipfs
+      - test-go-ipfs

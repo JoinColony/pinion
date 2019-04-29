@@ -9,7 +9,7 @@
   "scripts": {
     "test": "ava",
     "lint": "eslint --fix src",
-    "ipfsd": "docker run -v $(pwd)/data:/root/.jsipfs -p 4001:4001 -p 4003:4003 -p 127.0.0.1:8080:8080 -p 127.0.0.1:5001:5001 colony/js-ipfs:latest daemon --enable-pubsub-experiment",
+    "ipfsd": "docker run -v $(pwd)/data:/root/.jsipfs -p 4001:4001 -p 4003:4003 -p 127.0.0.1:8080:8080 -p 127.0.0.1:5001:5001 joincolony/js-ipfs:latest daemon --enable-pubsub-experiment",
     "postinstall": "scripts/postinstall.sh",
     "start": "bin/index.js",
     "test:ci": "wait-on tcp:5001 && yarn test --tap | tap-xunit > reports/ava/ava-results.xml"
