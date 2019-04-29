@@ -661,6 +661,13 @@ async@^2.0.1, async@^2.5.0, async@^2.6.0, async@^2.6.1:
   dependencies:
     lodash "^4.17.10"
 
+async@^2.6.2:
+  version "2.6.2"
+  resolved "https://registry.yarnpkg.com/async/-/async-2.6.2.tgz#18330ea7e6e313887f5d2f2a904bac6fe4dd5381"
+  integrity sha512-H1qVYh1MYhEEFLsP97cVKqCGo7KfCyTt6uEWqsTBr9SO84oK9Uwbyd/yCW+6rKJLHksBNUVWZDAjfS+Ccx0Bbg==
+  dependencies:
+    lodash "^4.17.11"
+
 asynckit@^0.4.0:
   version "0.4.0"
   resolved "https://registry.yarnpkg.com/asynckit/-/asynckit-0.4.0.tgz#c79ed97f7f34cb8f2ba1bc9790bcc366474b4b79"
@@ -1029,7 +1036,7 @@ boom@5.x.x:
   dependencies:
     hoek "4.x.x"
 
-boom@^7.2.0, boom@^7.2.2:
+boom@^7.2.0, boom@^7.3.0:
   version "7.3.0"
   resolved "https://registry.yarnpkg.com/boom/-/boom-7.3.0.tgz#733a6d956d33b0b1999da3fe6c12996950d017b9"
   integrity sha512-Swpoyi2t5+GhOEGw8rEsKvTxFLIDiiKoUc2gsoV6Lyr43LHBIzch3k2MvYUs8RTROrIkVJ3Al0TkaOGjnb+B6A==
@@ -1867,6 +1874,13 @@ debug@^4.0.0, debug@^4.0.1, debug@^4.1.0, debug@~4.1.0:
   version "4.1.0"
   resolved "https://registry.yarnpkg.com/debug/-/debug-4.1.0.tgz#373687bffa678b38b1cd91f861b63850035ddc87"
   integrity sha512-heNPJUJIqC+xB6ayLAMHaIrmN9HKa7aQO8MGqKpvCA+uJYVcvR6l5kgdrhRuwPFHU7P5/A1w0BjByPHwpfTDKg==
+  dependencies:
+    ms "^2.1.1"
+
+debug@^4.1.1:
+  version "4.1.1"
+  resolved "https://registry.yarnpkg.com/debug/-/debug-4.1.1.tgz#3b72260255109c6b589cee050f1d516139664791"
+  integrity sha512-pYAIzeRo8J6KPEaJ0VWOh5Pzkbw/RetuzehGM7QRRX5he4fPHx2rdKMB256ehJCkX+XRQm16eZLqLNS8RSZXZw==
   dependencies:
     ms "^2.1.1"
 
@@ -3602,7 +3616,7 @@ ipfs-block@~0.8.0:
     cids "~0.5.5"
     class-is "^1.1.0"
 
-ipfs-http-client@^30.1.3:
+ipfs-http-client@^30.1.0, ipfs-http-client@^30.1.3:
   version "30.1.3"
   resolved "https://registry.yarnpkg.com/ipfs-http-client/-/ipfs-http-client-30.1.3.tgz#4767ed544fcaa1ac44d6b39cb2fc85cef170899f"
   integrity sha512-NQ7WTLKUZeoKaKXrTSLAtjASRYCR0bPdsolZf16Y7Gt7o3RfiPpFF+AqvP0xbekOV3/zhFj2Qyf6ShEV4CCtsQ==
@@ -3916,30 +3930,30 @@ ipfs@^0.33.1:
     prom-client "^11.1.3"
     prometheus-gc-stats "~0.6.0"
 
-ipfsd-ctl@0.40.0:
-  version "0.40.0"
-  resolved "https://registry.yarnpkg.com/ipfsd-ctl/-/ipfsd-ctl-0.40.0.tgz#b8d69b18b16e18265e603e03cb64b77239776524"
-  integrity sha512-gjc3BeR0oXpgpIV3900jq4aShmryONMaGGrdB6Mm8AJJLSp+VcLN/vOcYfIURxDnne2+S01vBf6SpbsqgMRi0Q==
+ipfsd-ctl@0.42.2:
+  version "0.42.2"
+  resolved "https://registry.yarnpkg.com/ipfsd-ctl/-/ipfsd-ctl-0.42.2.tgz#b6e6db6966ac7e88dcb83c6ce1bf8cac00625b61"
+  integrity sha512-+Vu8GBJ8sX12x96gxCuYKHdYeAiT4o+EFLmNERGla4ZKskpMa2NkNAYex/Yf23Q/ZU/7ZBW79PUPM0AL+DlVGg==
   dependencies:
-    async "^2.6.1"
+    async "^2.6.2"
     base-x "^3.0.5"
-    boom "^7.2.2"
-    debug "^4.1.0"
+    boom "^7.3.0"
+    debug "^4.1.1"
     detect-node "^2.0.4"
     dexie "^2.0.4"
     execa "^1.0.0"
     hapi "^16.6.2"
     hat "~0.0.3"
-    ipfs-api "^26.1.0"
-    joi "^14.0.4"
-    libp2p-crypto "~0.14.0"
+    ipfs-http-client "^30.1.0"
+    joi "^14.3.1"
+    libp2p-crypto "~0.16.1"
     lodash.clone "^4.5.0"
     lodash.defaults "^4.2.0"
     lodash.defaultsdeep "^4.6.0"
-    multiaddr "^5.0.0"
+    multiaddr "^6.0.6"
     once "^1.4.0"
     protons "^1.0.1"
-    rimraf "^2.6.2"
+    rimraf "^2.6.3"
     safe-json-parse "^4.0.0"
     safe-json-stringify "^1.2.0"
     superagent "^4.0.0-beta.5"
@@ -4563,10 +4577,10 @@ joi@^13.0.0, joi@^13.4.0:
     isemail "3.x.x"
     topo "3.x.x"
 
-joi@^14.0.4:
-  version "14.3.0"
-  resolved "https://registry.yarnpkg.com/joi/-/joi-14.3.0.tgz#55f7c5caa8256de74ccb12eb22ab1c19eea02db3"
-  integrity sha512-0HKd1z8MWogez4GaU0LkY1FgW30vR2Kwy414GISfCU41OYgUC2GWpNe5amsvBZtDqPtt7DohykfOOMIw1Z5hvQ==
+joi@^14.3.1:
+  version "14.3.1"
+  resolved "https://registry.yarnpkg.com/joi/-/joi-14.3.1.tgz#164a262ec0b855466e0c35eea2a885ae8b6c703c"
+  integrity sha512-LQDdM+pkOrpAn4Lp+neNIFV3axv1Vna3j38bisbQhETPMANYRbFJFUyOZcOClYvM/hppMhGWuKSFEK9vjrB+bQ==
   dependencies:
     hoek "6.x.x"
     isemail "3.x.x"
@@ -5007,7 +5021,7 @@ libp2p-crypto@~0.14.0, libp2p-crypto@~0.14.1:
     ursa-optional "~0.9.9"
     webcrypto-shim "github:dignifiedquire/webcrypto-shim#master"
 
-libp2p-crypto@~0.16.0:
+libp2p-crypto@~0.16.0, libp2p-crypto@~0.16.1:
   version "0.16.1"
   resolved "https://registry.yarnpkg.com/libp2p-crypto/-/libp2p-crypto-0.16.1.tgz#40aa07e95a0a7fe6887ea3868625e74c81c34d75"
   integrity sha512-+fxqy+cDjwOKK4KTj44WQmjPE5ep2eR5uAIQWHl/+RKvRSor3+RAY53VWkAecgAEvjX2AswxBsoCIJK1Qk5aIQ==
@@ -6512,7 +6526,7 @@ orbit-db-feedstore@~1.4.0:
   dependencies:
     orbit-db-eventstore "~1.4.0"
 
-orbit-db-identity-provider@0.0.2, orbit-db-identity-provider@^0.0.3, "orbit-db-identity-provider@github:orbitdb/orbit-db-identity-provider":
+orbit-db-identity-provider@0.0.2, "orbit-db-identity-provider@github:orbitdb/orbit-db-identity-provider":
   version "0.0.2"
   resolved "https://registry.yarnpkg.com/orbit-db-identity-provider/-/orbit-db-identity-provider-0.0.2.tgz#f2e05ac05b2154667ab341e1da8402cea5d056f7"
   integrity sha512-xE69h4FBIBU4im3KoirRxblHQyDeZesMKw12QqUtRYiIHVT7vhI4hx1QmsUDlZerBz8Pv4IJN4wVMijqCpc7xQ==
@@ -7744,12 +7758,19 @@ retry@^0.12.0:
   resolved "https://registry.yarnpkg.com/retry/-/retry-0.12.0.tgz#1b42a6266a21f07421d1b0b54b7dc167b01c013b"
   integrity sha1-G0KmJmoh8HQh0bC1S33BZ7AcATs=
 
-rimraf@^2.2.8, rimraf@^2.6.1, rimraf@^2.6.2, rimraf@~2.6.2:
+rimraf@^2.2.8, rimraf@^2.6.1, rimraf@~2.6.2:
   version "2.6.2"
   resolved "https://registry.yarnpkg.com/rimraf/-/rimraf-2.6.2.tgz#2ed8150d24a16ea8651e6d6ef0f47c4158ce7a36"
   integrity sha512-lreewLK/BlghmxtfH36YYVg1i8IAce4TI7oao75I1g245+6BctqTVQiBP3YUJ9C6DQOXJmkYR9X9fCLtCOJc5w==
   dependencies:
     glob "^7.0.5"
+
+rimraf@^2.6.3:
+  version "2.6.3"
+  resolved "https://registry.yarnpkg.com/rimraf/-/rimraf-2.6.3.tgz#b2d104fe0d8fb27cf9e0a1cda8262dd3833c6cab"
+  integrity sha512-mwqeW5XsA2qAejG46gYdENaxXjx9onRNCfn7L0duuP4hCuTIi/QO7PDK07KJfp1d+izWPrzEJDcSqBa0OZQriA==
+  dependencies:
+    glob "^7.1.3"
 
 rimraf@~2.2.6:
   version "2.2.8"
