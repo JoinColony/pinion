@@ -82,6 +82,7 @@ class Pinner extends EventEmitter {
       to: store.address.toString(),
       payload: {
         address: store.address.toString(),
+        // @todo this can be the result of peer.exchanged
         // eslint-disable-next-line no-underscore-dangle
         count: store._oplog._length,
         timestamp: Date.now(),
