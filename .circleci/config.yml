@@ -7,7 +7,7 @@ jobs:
   build:
     docker:
       - image: circleci/node:10.14
-      - image: ipfs/go-ipfs
+      - image: colony/js-ipfs:latest
         command: daemon --enable-pubsub-experiment
 
     working_directory: ~/pinion
