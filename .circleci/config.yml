@@ -6,7 +6,7 @@ version: 2
 jobs:
   test-js-ipfs:
     docker:
-      - image: circleci/node:10.14
+      - image: circleci/node:10.15
       - image: joincolony/js-ipfs:latest
         command: daemon --enable-pubsub-experiment
 
@@ -43,7 +43,7 @@ jobs:
           path: reports
   test-go-ipfs:
     docker:
-      - image: circleci/node:10.14
+      - image: circleci/node:10.15
       - image: ipfs/go-ipfs:latest
         command: daemon --enable-pubsub-experiment
 
