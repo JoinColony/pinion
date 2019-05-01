@@ -4,10 +4,10 @@ yarn-error.log
 .env
 
 ### IPFS node data
-data/*
-!data/config
-!data/version
-!data/datastore_spec
+data-js/*
+data-go/*
+!data-js/config
+!data-go/config
 
 ### orbit node data
 orbitdb*
