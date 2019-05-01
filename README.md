@@ -1,22 +1,24 @@
-<!--<div align="center">-->
-<!--  <img src="/docs/img/pinion_color.svg" width="600" />-->
-<!--</div>-->
-<!--<div align="center">-->
-<!--  <a href="https://circleci.com/gh/JoinColony/pinion">-->
-<!--    <img src="https://circleci.com/gh/JoinColony/pinion.svg?style=shield" />-->
-<!--  </a>-->
-<!--  <a href="https://greenkeeper.io/">-->
-<!--    <img src="https://badges.greenkeeper.io/JoinColony/pinion.svg" />-->
-<!--  </a>-->
-<!--  <a href="https://gitter.im/JoinColony/pinion">-->
-<!--    <img src="https://img.shields.io/gitter/room/TechnologyAdvice/Stardust.svg" />-->
-<!--  </a>-->
-<!--  <a href="https://build.colony.io/">-->
-<!--    <img src="https://img.shields.io/discourse/https/build.colony.io/status.svg" />-->
-<!--  </a>-->
-<!--</div>-->
+<div align="center">
+  <img src="/docs/img/pinion_color.svg" width="600" "Pinion Logo" />
+</div>
+<div align="center">
+  <a href="https://circleci.com/gh/JoinColony/pinion">
+    <img src="https://circleci.com/gh/JoinColony/pinion.svg?style=shield"
+    title="CircleCi"/>
+  </a>
+  <a href="https://renovatebot.com/">
+    <img src="https://img.shields.io/badge/renovate-enabled-brightgreen.svg"
+    title="Renovate enabled" />
+  </a>
+  <a href="https://gitter.im/JoinColony/pinion">
+    <img src="https://img.shields.io/gitter/room/TechnologyAdvice/Stardust.svg" title="Join us on gitter" />
+  </a>
+  <a href="https://build.colony.io/">
+    <img src="https://img.shields.io/discourse/https/build.colony.io/status.svg" title="Contribute!" />
+  </a>
+</div>
 
-# Pinion 📌
+# Pinion
 
 Pinion is a lightweight pinning service that supports both IPFS content and [orbit-db](https://github.com/orbitdb/orbit-db) stores. It relies solely on [ipfs-pubsub-peer-monitor](https://github.com/ipfs-shipyard/ipfs-pubsub-peer-monitor), [orbit-db](https://github.com/orbitdb/orbit-db), and [js-ipfs-http-client](https://github.com/ipfs/js-ipfs-http-client) to communicate with an IPFS node.
 

@@ -1,11 +1,10 @@
-/* @flow */
 class CachedStore {
   constructor(orbitStore, onTimeout) {
     this.orbitStore = orbitStore;
     this.onTimeout = onTimeout;
     this.timeout = setTimeout(
       () => this.onTimeout(),
-      Number(process.env.OPEN_STORE_TIMEOUT_MS) || 30000,
+      Number(process.env.OPEN_STORE_TIMEOUT_MS) || 60000,
     );
   }
 
@@ -17,7 +16,7 @@ class CachedStore {
     this.clearEvictionTimeout();
     this.timeout = setTimeout(
       () => this.onTimeout(),
-      Number(process.env.OPEN_STORE_TIMEOUT_MS) || 30000,
+      Number(process.env.OPEN_STORE_TIMEOUT_MS) || 60000,
     );
   }
 }
