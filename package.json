@@ -24,6 +24,9 @@
   "license": "MIT",
   "devDependencies": {
     "@colony/eslint-config-colony": "^8.0.0-beta.2",
+    "@types/dotenv": "^6.1.1",
+    "@types/lru-cache": "^5.1.0",
+    "@types/node": "^11.13.8",
     "ava": "^1.4.1",
     "babel-eslint": "^10.0.1",
     "eslint": "^5.16.0",
@@ -38,6 +41,7 @@
     "lint-staged": "^8.1.0",
     "prettier": "^1.15.3",
     "tap-xunit": "^2.3.0",
+    "typescript": "^3.4.5",
     "wait-on": "^3.2.0"
   },
   "dependencies": {
