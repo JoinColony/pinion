@@ -113,3 +113,133 @@ test('pinner joins the defined pubsub room', async t => {
   await teardown();
   return pinner.close();
 });
+
+test('pinner pins stuff', async t => {
+  const room = 'PIN_ROOM';
+  const pinner = new Pinion(room);
+  const pinnerId = await pinner.getId();
+  const { ipfs, teardown } = await getIPFSNode(pinnerId);
+  await ipfs.pubsub.subscribe(room, noop);
+  const orbit = await getOrbitNode(ipfs);
+  const storeData = {
+    foo: 'bar',
+    biz: 'baz',
+  };
+  const store = await createKVStore(orbit, 'kvstore1', storeData);
+  const roomMonitor = new PeerMonitor(ipfs.pubsub, room);
+  // On every new peer we tell everyone that we want to pin the store
+  roomMonitor.on(
+    'join',
+    (): void => {
+      const action: ClientAction = {
+        type: PIN_STORE,
+        payload: { address: store.address.toString() },
+      };
+      publishMessage(ipfs, room, action);
+    },
+  );
+  await pinner.init();
+  const pinnedStoreData = await new Promise(resolve => {
+    pinner.events.on('stores:pinned', async (address, heads) => {
+      // @Note this uses internal APIs so this may break any minute
+      // BUT it's the only way to test whether all the data was pinned
+      const nextHead = await ipfs.dag.get(heads[0].next);
+      const result = [heads[0].payload, nextHead.value.payload].reduce(
+        (data, current) => {
+          data[current.key] = current.value;
+          return data;
+        },
+        {},
+      );
+      resolve(result);
+    });
+  });
+  t.deepEqual(pinnedStoreData, storeData);
+  await ipfs.pubsub.unsubscribe(room, noop);
+  await orbit.disconnect();
+  roomMonitor.stop();
+  await teardown();
+  return pinner.close();
+});
+
+test('pinner responds upon replication event', async t => {
+  const room = 'REPLICATED_PIN_ROOM';
+  const pinner = new Pinion(room);
+  const pinnerId = await pinner.getId();
+  const { ipfs, teardown } = await getIPFSNode(pinnerId);
+  await ipfs.pubsub.subscribe(room, noop);
+  const orbit = await getOrbitNode(ipfs);
+  const store = await createKVStore(orbit, 'replicated.kvstore1', {
+    foo: 'bar',
+    biz: 'baz',
+  });
+  const roomMonitor = new PeerMonitor(ipfs.pubsub, room);
+  // On every new peer we tell everyone that we want to pin the store
+  roomMonitor.on('join', () => {
+    const action = {
+      type: PIN_STORE,
+      payload: { address: store.address.toString() },
+    };
+    publishMessage(ipfs, room, action);
+  });
+  await pinner.init();
+  const gotReplicated = await new Promise(resolve => {
+    ipfs.pubsub.subscribe(room, (msg: IPFS.PubsubMessage) => {
+      const {
+        type,
+        payload: { address },
+      } = JSON.parse(msg.data.toString());
+      if (type === REPLICATED && address === store.address.toString())
+        resolve(true);
+    });
+  });
+  t.truthy(gotReplicated);
+  await ipfs.pubsub.unsubscribe(room, noop);
+  await orbit.disconnect();
+  roomMonitor.stop();
+  await teardown();
+  return pinner.close();
+});
+
+test('pinner ACK actions', async t => {
+  const room = 'ACK_ROOM';
+  const pinner = new Pinion(room);
+  const pinnerId = await pinner.getId();
+  const { ipfs, teardown } = await getIPFSNode(pinnerId);
+  await ipfs.pubsub.subscribe(room, noop);
+  const orbit = await getOrbitNode(ipfs);
+  const store = await createKVStore(orbit, 'ack.kvstore1', {
+    foo: 'bar',
+    biz: 'baz',
+  });
+  const roomMonitor = new PeerMonitor(ipfs.pubsub, room);
+  // On every new peer we tell everyone that we want to pin the store
+  roomMonitor.on('join', () => {
+    const action = {
+      type: PIN_STORE,
+      payload: { address: store.address.toString() },
+    };
+    publishMessage(ipfs, room, action);
+  });
+  await pinner.init();
+  const gotAck = await new Promise(resolve => {
+    ipfs.pubsub.subscribe(room, (msg: IPFS.PubsubMessage) => {
+      const {
+        type,
+        payload: { acknowledgedAction, address },
+      } = JSON.parse(msg.data.toString());
+      if (
+        type === ACK &&
+        acknowledgedAction === PIN_STORE &&
+        address === store.address.toString()
+      )
+        resolve(true);
+    });
+  });
+  t.truthy(gotAck);
+  await ipfs.pubsub.unsubscribe(room, noop);
+  await orbit.disconnect();
+  roomMonitor.stop();
+  await teardown();
+  return pinner.close();
+});

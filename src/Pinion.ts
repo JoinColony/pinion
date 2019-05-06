@@ -99,7 +99,6 @@ class Pinion {
     if (!action) return;
     const { type, payload } = action;
     const { ipfsHash, address } = payload;
-
     // Send ACK
     try {
       await this.publishAck(type, message.from, address, ipfsHash);
