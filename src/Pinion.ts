@@ -10,22 +10,15 @@ import EventEmitter = require('events');
 
 import IPFS from 'ipfs';
 
-import {
-  ACK,
-  HAVE_HEADS,
-  LOAD_STORE,
-  PIN_HASH,
-  PIN_STORE,
-  REPLICATED,
-} from './actions';
+import { ClientActions, PinnerActions } from './actions';
 
 import StoreManager from './StoreManager';
 import IPFSNode from './IPFSNode';
 
 const logError = debug('pinner:error');
 const logDebug = debug('pinner:debug');
-
-type ClientActionType = 'LOAD_STORE' | 'PIN_HASH' | 'PIN_STORE';
+const { LOAD_STORE, PIN_STORE, PIN_HASH } = ClientActions;
+const { ACK, HAVE_HEADS, REPLICATED } = PinnerActions;
 
 interface ClientActionPayload {
   ipfsHash?: string;
@@ -33,7 +26,7 @@ interface ClientActionPayload {
 }
 
 export interface ClientAction {
-  type: typeof LOAD_STORE | typeof PIN_HASH | typeof PIN_STORE;
+  type: ClientActions;
   payload: ClientActionPayload;
 }
 
@@ -44,7 +37,7 @@ interface ReplicationMessagePayload {
 }
 
 interface AckMessagePayload {
-  acknowledgedAction: ClientActionType;
+  acknowledgedAction: ClientActions;
   sender: string;
   address?: string;
   ipfsHash?: string;
@@ -173,7 +166,7 @@ class Pinion {
 
   // @fixme this function is still a bit chaotic. clean up!
   private publishAck(
-    acknowledgedAction: ClientActionType,
+    acknowledgedAction: ClientActions,
     sender: string,
     storeAddress?: string,
     ipfsHash?: string,

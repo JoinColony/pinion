@@ -1,6 +1,11 @@
-export const ACK = 'ACK';
-export const LOAD_STORE = 'LOAD_STORE';
-export const HAVE_HEADS = 'HAVE_HEADS';
-export const PIN_STORE = 'PIN_STORE';
-export const PIN_HASH = 'PIN_HASH';
-export const REPLICATED = 'REPLICATED';
+export enum ClientActions {
+  LOAD_STORE = 'LOAD_STORE',
+  PIN_STORE = 'PIN_STORE',
+  PIN_HASH = 'PIN_HASH',
+}
+
+export enum PinnerActions {
+  ACK = 'ACK',
+  HAVE_HEADS = 'HAVE_HEADS',
+  REPLICATED = 'REPLICATED',
+}
