@@ -7,11 +7,10 @@
 import IPFS from 'ipfs';
 import { cid } from 'is-ipfs';
 
+import EventEmitter = require('events');
 import ipfsClient = require('ipfs-http-client');
 import debug = require('debug');
 import PeerMonitor = require('ipfs-pubsub-peer-monitor');
-
-import events from './events';
 
 interface Message<T, P> {
   type: T;
@@ -24,15 +23,18 @@ const log = debug('pinner:ipfs');
 const logError = debug('pinner:ipfs:error');
 
 class IPFSNode {
-  private id: string = '';
+  private readonly events: EventEmitter;
 
   private readonly ipfs: IPFS;
 
   private readonly room: string;
 
+  private id: string = '';
+
   private roomMonitor!: PeerMonitor;
 
-  constructor(ipfsDaemonURL: string, room: string) {
+  constructor(events: EventEmitter, ipfsDaemonURL: string, room: string) {
+    this.events = events;
     this.ipfs = ipfsClient(ipfsDaemonURL);
     this.room = room;
   }
@@ -47,17 +49,17 @@ class IPFSNode {
     if (msg.from === this.id) return;
     log(`New Message from: ${msg.from}`);
     log(msg.data.toString());
-    events.emit('pubsub:message', msg);
+    this.events.emit('pubsub:message', msg);
   };
 
   private handleNewPeer = (peer: string): void => {
     log(`New peer: ${peer}`);
-    events.emit('pubsub:newpeer', peer);
+    this.events.emit('pubsub:newpeer', peer);
   };
 
   private handleLeavePeer = (peer: string): void => {
     log(`Peer left: ${peer}`);
-    events.emit('pubsub:peerleft', peer);
+    this.events.emit('pubsub:peerleft', peer);
   };
 
   public getIPFS(): IPFS {

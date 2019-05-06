@@ -13,8 +13,8 @@ import { Entry } from 'ipfs-log';
 import debug = require('debug');
 import LRU = require('lru-cache');
 import OrbitDB = require('orbit-db');
+import EventEmitter = require('events');
 
-import events from './events';
 import AccessControllers from './AccessControllers';
 import PermissiveAccessController from './PermissiveAccessController';
 import IPFSNode from './IPFSNode';
@@ -37,6 +37,8 @@ interface CachedStore {
 class StoreManager {
   private readonly cache: LRU<string, CachedStore>;
 
+  private readonly events: EventEmitter;
+
   private readonly ipfsNode: IPFSNode;
 
   private readonly options: { orbitDBDir: string };
@@ -44,9 +46,11 @@ class StoreManager {
   private orbitNode!: OrbitDB;
 
   constructor(
+    events: EventEmitter,
     ipfsNode: IPFSNode,
     { maxOpenStores, orbitDBDir, storeTTL }: StoreManagerOptions,
   ) {
+    this.events = events;
     this.ipfsNode = ipfsNode;
     this.cache = new LRU({
       max: maxOpenStores,
@@ -110,7 +114,7 @@ class StoreManager {
       heads: Entry[],
     ): void => {
       log(`Store "${address}" replicated for ${peer}`);
-      events.emit('stores:pinned', address, heads);
+      this.events.emit('stores:pinned', address, heads);
       store.events.off('replicate.progress', pinHeadHash);
       store.events.off('peer.exchanged', handlePeerExchanged);
     };

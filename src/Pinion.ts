@@ -1,10 +1,12 @@
 /**
  * @file Pinion The main class. It is responsible for the vast amount of communication
- * with the client and starting up the other instances.
+ * with the client and starting up the other instances. It also creates and
+ * distributes the shared event bus.
  */
 
 import assert = require('assert');
 import debug = require('debug');
+import EventEmitter = require('events');
 
 import IPFS from 'ipfs';
 
@@ -17,7 +19,6 @@ import {
   REPLICATED,
 } from './actions';
 
-import events from './events';
 import StoreManager from './StoreManager';
 import IPFSNode from './IPFSNode';
 
@@ -64,6 +65,9 @@ class Pinion {
 
   private readonly storeManager: StoreManager;
 
+  // We would like to use it in the tests, so it's public
+  public readonly events: EventEmitter;
+
   constructor(
     room: string,
     {
@@ -75,16 +79,18 @@ class Pinion {
   ) {
     assert(room && room.length, 'Pinning room is required for pinion to start');
 
-    this.ipfsNode = new IPFSNode(ipfsDaemonURL, room);
+    this.events = new EventEmitter();
 
-    this.storeManager = new StoreManager(this.ipfsNode, {
+    this.ipfsNode = new IPFSNode(this.events, ipfsDaemonURL, room);
+
+    this.storeManager = new StoreManager(this.events, this.ipfsNode, {
       maxOpenStores,
       storeTTL,
       orbitDBDir,
     });
 
-    events.on('pubsub:message', this.handleMessage);
-    events.on('stores:pinned', this.publishReplicated);
+    this.events.on('pubsub:message', this.handleMessage);
+    this.events.on('stores:pinned', this.publishReplicated);
   }
 
   private handleMessage = async (
@@ -199,7 +205,7 @@ class Pinion {
     logDebug('Closing...');
     await this.ipfsNode.stop();
     await this.storeManager.stop();
-    events.removeAllListeners();
+    this.events.removeAllListeners();
   }
 }
 
