@@ -3,10 +3,10 @@
  * with the client and starting up the other instances.
  */
 
-import assert from 'assert';
+import assert = require('assert');
+import debug = require('debug');
 
 import IPFS from 'ipfs';
-import debug from 'debug';
 
 import {
   ACK,

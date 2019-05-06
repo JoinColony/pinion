@@ -5,10 +5,11 @@
  */
 
 import IPFS from 'ipfs';
-import ipfsClient from 'ipfs-http-client';
-import debug from 'debug';
-import isIPFS from 'is-ipfs';
-import PeerMonitor from 'ipfs-pubsub-peer-monitor';
+import { cid } from 'is-ipfs';
+
+import ipfsClient = require('ipfs-http-client');
+import debug = require('debug');
+import PeerMonitor = require('ipfs-pubsub-peer-monitor');
 
 import events from './events';
 
@@ -91,7 +92,7 @@ class IPFSNode {
   }
 
   public async pinHash(ipfsHash: string): Promise<void> {
-    if (!isIPFS.cid(ipfsHash)) {
+    if (!cid(ipfsHash)) {
       logError(`IPFS hash is invalid: ${ipfsHash}`);
       return;
     }

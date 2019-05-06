@@ -1,11 +1,11 @@
 import { randomBytes } from 'crypto';
 import { promisify } from 'util';
-
 import IPFS from 'ipfs';
 import { serial as test } from 'ava';
-import PeerMonitor from 'ipfs-pubsub-peer-monitor';
-import OrbitDB from 'orbit-db';
 import { EntryData } from 'ipfs-log';
+
+import PeerMonitor = require('ipfs-pubsub-peer-monitor');
+import OrbitDB = require('orbit-db');
 // @ts-ignore We don't want to type that right now
 import { create as createIPFS } from 'ipfsd-ctl';
 

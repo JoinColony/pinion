@@ -7,11 +7,12 @@
  * Furthermore we can close store in a more predictable way.
  */
 
-import OrbitDB from 'orbit-db';
 import OrbitDBStore from 'orbit-db-store';
-import debug from 'debug';
-import LRU from 'lru-cache';
 import { Entry } from 'ipfs-log';
+
+import debug = require('debug');
+import LRU = require('lru-cache');
+import OrbitDB = require('orbit-db');
 
 import events from './events';
 import AccessControllers from './AccessControllers';
