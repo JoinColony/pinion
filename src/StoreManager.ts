@@ -11,32 +11,31 @@ import OrbitDBStore from 'orbit-db-store';
 import { Entry } from 'ipfs-log';
 
 import debug = require('debug');
-import LRU = require('lru-cache');
 import OrbitDB = require('orbit-db');
 import EventEmitter = require('events');
 
 import AccessControllers from './AccessControllers';
 import PermissiveAccessController from './PermissiveAccessController';
 import IPFSNode from './IPFSNode';
+import AsyncLRU from './AsyncLRU';
 
 const log = debug('pinner:storeManager');
-const logError = debug('pinner:storeManager:error');
 
 type StoreType = 'counter' | 'eventlog' | 'feed' | 'docstore' | 'keyvalue';
 
 interface StoreManagerOptions {
   maxOpenStores: number;
   orbitDBDir: string;
-  storeTTL: number;
 }
 
 interface CachedStore {
-  storePromise: Promise<OrbitDBStore>;
+  openPromise: Promise<OrbitDBStore>;
+  closePromise: Promise<void>;
   lastOpenedAt: number;
 }
 
 class StoreManager {
-  private readonly cache: LRU<string, CachedStore>;
+  private readonly cache: AsyncLRU<string, OrbitDBStore>;
 
   private readonly events: EventEmitter;
 
@@ -49,13 +48,14 @@ class StoreManager {
   constructor(
     events: EventEmitter,
     ipfsNode: IPFSNode,
-    { maxOpenStores, orbitDBDir, storeTTL }: StoreManagerOptions,
+    { maxOpenStores, orbitDBDir }: StoreManagerOptions,
   ) {
     this.events = events;
     this.ipfsNode = ipfsNode;
-    this.cache = new LRU({
+    this.cache = new AsyncLRU({
       max: maxOpenStores,
-      dispose: this.closeStore,
+      load: this.load,
+      remove: this.remove,
     });
     this.options = { orbitDBDir };
   }
@@ -64,41 +64,25 @@ class StoreManager {
     return this.cache.length;
   }
 
-  private closeStore = async (
+  private remove = async (
     address: string,
-    cachedStore: CachedStore,
+    store: OrbitDBStore,
   ): Promise<void> => {
-    const store = await cachedStore.storePromise;
     console.log('closing store ' + store.address);
-    store.close().catch(logError);
+    return store.close();
   };
 
-  private async openStore(address: string): Promise<CachedStore> {
-    log(`Opening store: ${address}`);
-    const cachedStore = this.cache.get(address);
-    if (cachedStore) {
-      log(`Store already open: ${address}`);
-      // @fixme: I'm under the assumption here that the cache doesn't copy the values.
-      // Please double check.
-      cachedStore.lastOpenedAt = Date.now();
-      return cachedStore;
-    }
-    log(`Opening store from orbit: ${address}`);
-    // @todo: Will this throw when the store does not exist?
-    const storePromise = this.orbitNode.open(address, {
+  private load = async (address: string): Promise<OrbitDBStore> => {
+    return this.orbitNode.open(address, {
       accessController: {
         /* @todo: we are using the permissive access controller for now, eventually we want to use our access controllers */
         controller: new PermissiveAccessController(),
       },
       overwrite: false,
     });
-    const newStore = { storePromise, lastOpenedAt: Date.now() };
-    this.cache.set(address, newStore);
-    return newStore;
-  }
+  };
 
   public async init(): Promise<void> {
-    // @fixme: run cleanup function interval every 2 minutes?
     const ipfs = this.ipfsNode.getIPFS();
     this.orbitNode = await OrbitDB.createInstance(ipfs, {
       AccessControllers,
@@ -107,15 +91,21 @@ class StoreManager {
   }
 
   public async stop(): Promise<void> {
-    await this.orbitNode.disconnect();
-    this.cache.reset();
+    await this.cache.reset();
+    return this.orbitNode.disconnect();
+  }
+
+  public async loadStore(address: string): Promise<OrbitDBStore> {
+    return this.cache.load(address);
+  }
+
+  public async closeStore(address: string): Promise<void> {
+    return this.cache.remove(address);
   }
 
   public async pinStore(address: string): Promise<void> {
-    const cachedStore = await this.openStore(address);
-    const store = await cachedStore.storePromise;
+    const store = await this.loadStore(address);
     const pinHeadHash = (storeAddress: string, ipfsHash: string): void => {
-      cachedStore.lastOpenedAt = Date.now();
       this.ipfsNode.pinHash(ipfsHash);
     };
     const handlePeerExchanged = (
@@ -130,11 +120,6 @@ class StoreManager {
     };
     store.events.on('replicate.progress', pinHeadHash);
     store.events.on('peer.exchanged', handlePeerExchanged);
-  }
-
-  public async loadStore(address: string) {
-    const store = await this.openStore(address);
-    // @fixme: add more load logic?
   }
 }
 

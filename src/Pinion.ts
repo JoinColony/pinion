@@ -47,7 +47,6 @@ interface AckMessagePayload {
 interface Options {
   ipfsDaemonURL?: string;
   maxOpenStores?: number;
-  storeTTL?: number;
   orbitDBDir?: string;
 }
 
@@ -66,7 +65,6 @@ class Pinion {
     {
       ipfsDaemonURL = '/ip4/127.0.0.1/tcp/5001',
       maxOpenStores = 100,
-      storeTTL = 60 * 1000,
       orbitDBDir = './orbitdb',
     }: Options = {},
   ) {
@@ -78,7 +76,6 @@ class Pinion {
 
     this.storeManager = new StoreManager(this.events, this.ipfsNode, {
       maxOpenStores,
-      storeTTL,
       orbitDBDir,
     });
 
