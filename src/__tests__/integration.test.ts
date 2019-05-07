@@ -338,3 +338,49 @@ test('A third peer can request a previously pinned store', async t => {
   await teardown2();
   return pinner.close();
 });
+
+test.only('pinner caches stores and limit them to a pre-defined threshold', async t => {
+  const room = 'CACHED_PIN_ROOM';
+  const pinner = new Pinion(room, { maxOpenStores: 1 });
+  const pinnerId = await pinner.getId();
+  const { ipfs, teardown } = await getIPFSNode(pinnerId);
+  await ipfs.pubsub.subscribe(room, noop);
+  const orbit = await getOrbitNode(ipfs);
+  const store1 = await createKVStore(orbit, 'cached.kvstore1', {
+    foo: 'bar',
+    biz: 'baz',
+  });
+  const store2 = await createKVStore(orbit, 'cached.kvstore2', {
+    foo: 'bar',
+    biz: 'baz',
+  });
+
+  const roomMonitor = new PeerMonitor(ipfs.pubsub, room);
+  // On every new peer we tell everyone that we want to pin the store
+  roomMonitor.on('join', () => {
+    const firstAction = {
+      type: PIN_STORE,
+      payload: { address: store1.address.toString() },
+    };
+    const secondAction = {
+      type: PIN_STORE,
+      payload: { address: store2.address.toString() },
+    };
+    publishMessage(ipfs, room, firstAction);
+    publishMessage(ipfs, room, secondAction);
+  });
+  await pinner.init();
+  await new Promise(resolve => {
+    pinner.events.on('stores:pinned', msg => {
+      resolve(msg);
+    });
+  });
+  t.is(pinner.openStores, 1);
+  await ipfs.pubsub.unsubscribe(room, noop);
+  roomMonitor.stop();
+  await orbit.disconnect();
+  await store1.close();
+  await store2.close();
+  await teardown();
+  return pinner.close();
+});

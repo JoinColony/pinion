@@ -20,6 +20,7 @@ import PermissiveAccessController from './PermissiveAccessController';
 import IPFSNode from './IPFSNode';
 
 const log = debug('pinner:storeManager');
+const logError = debug('pinner:storeManager:error');
 
 type StoreType = 'counter' | 'eventlog' | 'feed' | 'docstore' | 'keyvalue';
 
@@ -59,19 +60,28 @@ class StoreManager {
     this.options = { orbitDBDir };
   }
 
-  private closeStore = (address: string, store: CachedStore) => {
-    // @fixme: implement me
+  public get openStores(): number {
+    return this.cache.length;
+  }
+
+  private closeStore = async (
+    address: string,
+    cachedStore: CachedStore,
+  ): Promise<void> => {
+    const store = await cachedStore.storePromise;
+    console.log('closing store ' + store.address);
+    store.close().catch(logError);
   };
 
   private async openStore(address: string): Promise<CachedStore> {
     log(`Opening store: ${address}`);
-    const store = this.cache.get(address);
-    if (store) {
+    const cachedStore = this.cache.get(address);
+    if (cachedStore) {
       log(`Store already open: ${address}`);
       // @fixme: I'm under the assumption here that the cache doesn't copy the values.
       // Please double check.
-      store.lastOpenedAt = Date.now();
-      return store;
+      cachedStore.lastOpenedAt = Date.now();
+      return cachedStore;
     }
     log(`Opening store from orbit: ${address}`);
     // @todo: Will this throw when the store does not exist?
@@ -82,9 +92,9 @@ class StoreManager {
       },
       overwrite: false,
     });
-    const cachedStore = { storePromise, lastOpenedAt: Date.now() };
-    this.cache.set(address, cachedStore);
-    return cachedStore;
+    const newStore = { storePromise, lastOpenedAt: Date.now() };
+    this.cache.set(address, newStore);
+    return newStore;
   }
 
   public async init(): Promise<void> {

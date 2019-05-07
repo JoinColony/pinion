@@ -86,6 +86,10 @@ class Pinion {
     this.events.on('stores:pinned', this.publishReplicated);
   }
 
+  public get openStores(): number {
+    return this.storeManager.openStores;
+  }
+
   private handleMessage = async (
     message: IPFS.PubsubMessage,
   ): Promise<void> => {
