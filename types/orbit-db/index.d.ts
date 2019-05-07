@@ -19,10 +19,10 @@ declare module 'orbit-db' {
       ipfs: IPFS,
       options?: OrbitOptions,
     ): Promise<OrbitDB>;
-    public open(
+    public open<T extends OrbitDBStore = OrbitDBStore>(
       storeAddress: string,
       options?: StoreOpenOptions,
-    ): Promise<OrbitDBStore>;
+    ): Promise<T>;
     public disconnect(): Promise<void>;
     public kvstore(
       storeIdentifier: string,

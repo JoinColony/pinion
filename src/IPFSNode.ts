@@ -104,6 +104,7 @@ class IPFSNode {
     } catch (caughtError) {
       logError(`Could not pin hash ${ipfsHash}: ${caughtError}`);
     }
+    this.events.emit('ipfs:pinned', ipfsHash);
   }
 }
 

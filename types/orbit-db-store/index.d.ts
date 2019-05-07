@@ -5,7 +5,7 @@ declare module 'orbit-db-store' {
   import { EntryData } from 'ipfs-log';
   import { AccessController } from 'orbit-db-access-controllers';
 
-  class OrbitDBStore {
+  abstract class OrbitDBStore {
     constructor(
       ipfs: IPFS,
       identity: Identity,
