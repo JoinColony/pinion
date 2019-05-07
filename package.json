@@ -8,7 +8,7 @@
   "main": "src/index.js",
   "scripts": {
     "test": "ava",
-    "lint": "eslint --fix src/**/*.ts",
+    "lint": "node_modules/.bin/eslint --fix --ext ts src types",
     "ipfsd-js": "docker run -v $(pwd)/data-js:/root/.jsipfs -p 4001:4001 -p 4003:4003 -p 127.0.0.1:8080:8080 -p 127.0.0.1:5001:5001 joincolony/js-ipfs:latest daemon --enable-pubsub-experiment",
     "ipfsd-go": "docker run -v $(pwd)/data-go:/data/ipfs -p 4001:4001 -p 4003:4003 -p 127.0.0.1:8080:8080 -p 127.0.0.1:5001:5001 ipfs/go-ipfs:v0.4.20 daemon --enable-pubsub-experiment",
     "postinstall": "scripts/postinstall.sh",
