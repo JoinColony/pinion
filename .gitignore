@@ -7,9 +7,13 @@ yarn-error.log
 data-js/*
 data-go/*
 !data-js/config
+!data-js/version
 !data-go/config
+!data-go/version
 
 ### orbit node data
 orbitdb*
 ipfs-test-data
-dist
+
+### tsc output
+lib

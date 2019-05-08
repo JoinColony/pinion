@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const Pinner = require('../dist');
+const Pinner = require('../lib');
 const { config } = require('dotenv');
 
 if (process.env.NODE_ENV !== 'production') config();

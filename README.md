@@ -42,27 +42,57 @@ or
 npm i -g @colony/pinion
 ```
 
-And then run pinion passing a IPFS node endpoint and a pinning room:
+## Usage (for the impatient)
+
+And then run pinion passing an IPFS node endpoint and a pinning room:
 
 ```bash
-DAEMON_URL='/ip4/127.0.0.1/tcp/5001' pinion 'COLONY_PINNING_ROOM'
+PINION_ROOM=YOUR_PINNING_ROOM pinion
 ```
 
-### Custom configuration
+In this configuration we're assuming some sensible defaults. See below.
 
-#### OPEN_STORES_THRESHOLD
+## Custom configuration
 
-You can also specify the limit of how many stores you wanna keep open simultaneously by passing in an environment variable `OPEN_STORES_THRESHOLD`. The limit is by default set to 1000 stores.
+Pinion can be configured by either passing in the configuration programatically to its constructor (with the only required value being the room, see defaults in the example):
 
-#### OPEN_STORE_TIMEOUT_MS
+```js
+import Pinion from 'Pinion';
 
-You can specify for how long pinion keeps a store open before it's closed. The limit is by default `300000` ms
+const pinner = new Pinion('YOUR_PINNING_ROOM', {
+  ipfsDaemonURL: '/ip4/127.0.0.1/tcp/5001',
+  maxOpenStores: 100,
+  orbitDBDir: './orbitdb',
+});
+```
 
-#### DAEMON_URL
+Or using environment variables when running it from the command line:
+
+```bash
+PINION_ROOM=YOUR_PINNING_ROOM PINION_IPFS_DAEMON_URL=/ip4/127.0.0.1/tcp/5001 PINION_MAX_OPEN_STORES=100 PINION_ORBIT_DB_DIR=./orbitdb pinion
+```
+
+#### `PINION_ROOM`
+
+(required)
+
+The IPFS pubsub room pinion is going to join and listen to new messages to.
+
+#### `PINION_MAX_OPEN_STORES`
+
+(optional)
+
+You can also specify the limit of how many stores you wanna keep open simultaneously by passing in an environment variable `MAX_OPEN_STORES`. The stores will be automatically allocated using a LRU algorithm. The limit is by default set to 100 stores.
+
+#### `PINION_IPFS_DAEMON_URL`
+
+(optional)
 
 You can specify the an IPFS node url of your preference. The default is `/ip4/127.0.0.1/tcp/5001`
 
-#### ORBITDB_PATH
+#### `PINION_ORBIT_DB_DIR`
+
+(optional)
 
 You can specify the orbit-db path option so stores data are kept in the place of your preference. The default is `./orbitdb`
 
@@ -74,7 +104,7 @@ Pinion is still on its infancy and you might need debug info or a more detailed 
 
 ### Requests
 
-#### PIN_STORE
+#### `PIN_STORE`
 
 Opens a store, keeps listening to it for a pre-defined timeout and pin its content until the time is up or it's replicated.
 
@@ -87,15 +117,15 @@ Opens a store, keeps listening to it for a pre-defined timeout and pin its conte
 ```js
  {
    type: 'PIN_STORE',
-   payload: { address: '/orbitdb/Qma=/my-store/<signature>' },
+   payload: { address: '/orbitdb/Qma=/my-store' },
  };
 ```
 
 ---
 
-#### LOAD_STORE
+#### `LOAD_STORE`
 
-Opens a store, loads it and keep listening to it for a pre-defined timeout.
+Opens a store, loads it and keep listening to it until it's being cleaned up by the LRU cache.
 
 ##### Parameters
 
@@ -106,13 +136,13 @@ Opens a store, loads it and keep listening to it for a pre-defined timeout.
 ```js
  {
    type: 'LOAD_STORE',
-   payload: { address: '/orbitdb/Qma=/my-store/<signature>' },
+   payload: { address: '/orbitdb/Qma=/my-store' },
  };
 ```
 
 ---
 
-#### PIN_HASH
+#### `PIN_HASH`
 
 Request the IPFS node to pin the content hash.
 
@@ -133,7 +163,7 @@ Request the IPFS node to pin the content hash.
 
 #### Responses
 
-##### HAVE_HEADS
+##### `HAVE_HEADS`
 
 Published when the pinner has opened a store and it's ready
 
@@ -142,7 +172,7 @@ Published when the pinner has opened a store and it's ready
 ```js
  {
    type: 'HAVE_HEADS',
-   to: '/orbitdb/Qma=/my-store/<signature>',
+   to: '/orbitdb/Qma=/my-store',
    payload: {
      address: '/orbitdb/Qma=/my-store/<signature>',
      count: 100,
@@ -153,7 +183,7 @@ Published when the pinner has opened a store and it's ready
 
 ---
 
-##### ACK
+##### `ACK`
 
 Published on every incoming message, acknowledging we got it with either the `ipfsHash` or the orbit-db store address
 
@@ -166,7 +196,7 @@ Published on every incoming message, acknowledging we got it with either the `ip
    payload: {
      sender: 'Qma=',
      actionType: 'PIN_STORE',
-     address: '/orbitdb/Qma=/my-store/<signature>',
+     address: '/orbitdb/Qma=/my-store',
      ipfsHash: 'Qma=...',
      timestamp: 10010203993
    },
@@ -175,7 +205,7 @@ Published on every incoming message, acknowledging we got it with either the `ip
 
 ---
 
-##### REPLICATED
+##### `REPLICATED`
 
 Published after a store is fully replicated
 
@@ -184,9 +214,9 @@ Published after a store is fully replicated
 ```js
  {
    type: 'REPLICATED',
-   to: '/orbitdb/Qma=/my-store/<signature>',
+   to: '/orbitdb/Qma=/my-store',
    payload: {
-     address: '/orbitdb/Qma=/my-store/<signature>',
+     address: '/orbitdb/Qma=/my-store',
      count: 100,
      timestamp: 10010203993
    },
@@ -200,6 +230,16 @@ Published after a store is fully replicated
 We welcome all contributions to Pinion. You can help by testing, suggesting new features, improving performance or documentation.
 
 Please read our [Contributing Guidelines](https://github.com/JoinColony/pinion/blob/master/.github/CONTRIBUTING.md) for how to get started.
+
+### To run the tests
+
+Start an ipfs node on localhost on port 4001. You can use the commands provided in the package.json using either `yarn ipfsd-go` or `yarn ipfsd-js` (Docker has to be running on your system).
+
+Then, in another terminal window do:
+
+```
+yarn test
+```
 
 ## License
 

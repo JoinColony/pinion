@@ -3,7 +3,7 @@
     "target": "es2018",
     "module": "commonjs",
     "sourceMap": true,                    
-    "outDir": "dist",
+    "outDir": "lib",
     "strict": true,
     "moduleResolution": "node",
     "lib": ["es2018"],
