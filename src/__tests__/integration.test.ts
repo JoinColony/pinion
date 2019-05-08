@@ -13,7 +13,7 @@ import { create as createIPFS } from 'ipfsd-ctl';
 import Pinion, { ClientAction } from '../Pinion';
 import { ClientActions, PinnerActions } from '../actions';
 const { LOAD_STORE, PIN_STORE, PIN_HASH } = ClientActions;
-const { ACK, HAVE_HEADS, REPLICATED } = PinnerActions;
+const { ACK, REPLICATED } = PinnerActions;
 import AccessControllers from '../AccessControllers';
 import PermissiveAccessController from '../PermissiveAccessController';
 
@@ -339,7 +339,7 @@ test('A third peer can request a previously pinned store', async t => {
   return pinner.close();
 });
 
-test.only('pinner caches stores and limit them to a pre-defined threshold', async t => {
+test('pinner caches stores and limit them to a pre-defined threshold', async t => {
   const room = 'CACHED_PIN_ROOM';
   const pinner = new Pinion(room, { maxOpenStores: 1 });
   const pinnerId = await pinner.getId();

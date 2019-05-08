@@ -39,5 +39,13 @@ module.exports = {
       terms: ['@fixme', 'fixme'],
       location: 'anywhere',
     }],
-  }
+  },
+  overrides: [
+    {
+      files: ['*.test.ts'],
+      rules: {
+        '@typescript-eslint/explicit-function-return-type': 'off'
+      }
+    }
+  ]
 };

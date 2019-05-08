@@ -164,7 +164,6 @@ class Pinion {
     });
   }
 
-  // @fixme this function is still a bit chaotic. clean up!
   private publishAck(
     acknowledgedAction: ClientActions,
     sender: string,
