@@ -1,18 +1,13 @@
 /**
  * @file AsyncLRU. A LRU implementation tailored to our needs. This might be
  * extended with even mor specific logic.
- *
- * API:
- * const cache = new AsyncLRU({ max, load, remove })
- * const store = await cache.load(storeAddress)
- * await cache.remove(storeAddress)
  */
 
 import Yallist = require('yallist');
 import debug = require('debug');
 
 type LoadFn<K, V> = (key: K) => Promise<V>;
-type RemoveFn<K, V> = (key: K, value: V) => Promise<void>;
+type RemoveFn<K, V> = (key: K, value: V | void) => Promise<void>;
 
 interface Config<K, V> {
   max: number;
@@ -22,20 +17,21 @@ interface Config<K, V> {
 
 interface Entry<K, V> {
   key: K;
-  loadPromise: Promise<V>;
-  removePromise?: Promise<void>;
+  loading: Promise<V | void>;
+  removing?: Promise<V | void>;
+  afterRemoval?: () => Promise<V | void>;
 }
 
 const log = debug('pinner:lru');
 
 const createEntry = <K, V>(
   key: K,
-  loadPromise: Promise<V>,
-  removePromise?: Promise<void>,
+  loading: Promise<V | void>,
+  removing?: Promise<V | void>,
 ): Entry<K, V> => ({
   key,
-  loadPromise,
-  removePromise,
+  loading,
+  removing,
 });
 
 class AsyncLRU<K, V> {
@@ -58,10 +54,10 @@ class AsyncLRU<K, V> {
   }
 
   private async add(key: K): Promise<V> {
-    const loadPromise = this.loadFn(key);
-    this.llist.unshift(createEntry(key, loadPromise));
+    const loading = this.loadFn(key);
+    this.llist.unshift(createEntry(key, loading));
     if (this.llist.head) this.map.set(key, this.llist.head);
-    if (this.length >= this.max) {
+    if (this.length > this.max) {
       // There is a trade-off to be done here. We could await the deletion
       // before adding another store to have a predictable cache length. But
       // this could result in a queue of stores being added (resulting in
@@ -69,7 +65,31 @@ class AsyncLRU<K, V> {
       // content
       if (this.llist.tail) this.del(this.llist.tail).catch(log);
     }
-    return loadPromise;
+    return loading;
+  }
+
+  private async createRemovalPromise(
+    node: Yallist.Node<Entry<K, V>>,
+  ): Promise<V | void> {
+    const loaded = await this.removeEntry(node.value);
+    const { afterRemoval } = node.value;
+    this.unlink(node);
+    if (afterRemoval) {
+      return afterRemoval();
+    }
+    return loaded;
+  }
+
+  private async del(node: Yallist.Node<Entry<K, V>>): Promise<V | void> {
+    // If we wanted to open it again after removal, cancel that
+    node.value.afterRemoval = undefined;
+
+    // If we're already removing, just return that
+    if (node.value.removing) return node.value.removing;
+
+    // Otherwise create the removal promise
+    node.value.removing = this.createRemovalPromise(node);
+    return node.value.removing;
   }
 
   private unlink(node: Yallist.Node<Entry<K, V>>): void {
@@ -77,11 +97,13 @@ class AsyncLRU<K, V> {
     this.llist.removeNode(node);
   }
 
-  private async removeEntry(entry: Entry<K, V>): Promise<void> {
-    if (typeof this.removeFn != 'function') return;
+  private async removeEntry(entry: Entry<K, V>): Promise<V | void> {
     try {
-      const value = await entry.loadPromise;
-      await this.removeFn(entry.key, value);
+      const loaded = await entry.loading;
+      if (typeof this.removeFn == 'function') {
+        await this.removeFn(entry.key, loaded);
+      }
+      return loaded;
     } catch (caughtError) {
       // Assumption here is that the entry was removed already or could not be
       // removed. We remove it from the cache anyways
@@ -91,51 +113,42 @@ class AsyncLRU<K, V> {
     }
   }
 
-  private async del(node: Yallist.Node<Entry<K, V>>): Promise<void> {
-    const removePromise = this.removeEntry(node.value).then(
-      (): void => this.unlink(node),
-    );
-    node.value.removePromise = removePromise;
-    return removePromise;
-  }
-
   public get length(): number {
     return this.llist.length;
   }
 
-  public async load(key: K): Promise<V> {
+  public has(key: K): boolean {
+    return this.map.has(key);
+  }
+
+  public async load(key: K): Promise<V | void> {
     const node = this.map.get(key);
     if (node) {
-      if (node.value.removePromise) {
-        // Node is meant to be removed, let's wait for that to happen first
-        try {
-          await node.value.removePromise;
-        } catch (caughtError) {
-          log(caughtError);
-          // Unlink manually
-          this.unlink(node);
-        }
-        return this.add(key);
+      if (node.value.removing) {
+        // If we're already removing the node, tell it to add itself again
+        // afterwards
+        node.value.afterRemoval = (): Promise<V | void> => this.add(key);
+        return node.value.removing;
       }
       // Node is already there and loading (or done), so we move it to the top
       this.llist.unshiftNode(node);
       // Just return the node
-      return node.value.loadPromise;
+      return node.value.loading;
     }
     // No node available, we add a new one
     return this.add(key);
   }
 
-  public async remove(key: K): Promise<void> {
+  public async remove(key: K): Promise<V | void> {
     const node = this.map.get(key);
     if (!node) return;
     return this.del(node);
   }
 
-  public async reset(): Promise<void[]> {
+  public async reset(): Promise<(V | void)[]> {
     const removePromises = this.llist
       .toArray()
-      .map((entry): Promise<void> => this.removeEntry(entry));
+      .map((entry): Promise<V | void> => this.removeEntry(entry));
     this.llist = new Yallist();
     this.map = new Map();
     return Promise.all(removePromises);

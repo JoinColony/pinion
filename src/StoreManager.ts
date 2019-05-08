@@ -28,12 +28,6 @@ interface StoreManagerOptions {
   orbitDBDir: string;
 }
 
-interface CachedStore {
-  openPromise: Promise<OrbitDBStore>;
-  closePromise: Promise<void>;
-  lastOpenedAt: number;
-}
-
 class StoreManager {
   private readonly cache: AsyncLRU<string, OrbitDBStore>;
 
@@ -66,8 +60,11 @@ class StoreManager {
 
   private remove = async (
     address: string,
-    store: OrbitDBStore,
+    store: OrbitDBStore | void,
   ): Promise<void> => {
+    if (!store) {
+      return log(new Error(`Could not close store: ${address}`));
+    }
     console.log('closing store ' + store.address);
     return store.close();
   };
@@ -91,20 +88,23 @@ class StoreManager {
   }
 
   public async stop(): Promise<void> {
-    await this.cache.reset();
+    // await this.cache.reset();
     return this.orbitNode.disconnect();
   }
 
-  public async loadStore(address: string): Promise<OrbitDBStore> {
+  public async loadStore(address: string): Promise<OrbitDBStore | void> {
     return this.cache.load(address);
   }
 
-  public async closeStore(address: string): Promise<void> {
+  public async closeStore(address: string): Promise<OrbitDBStore | void> {
     return this.cache.remove(address);
   }
 
   public async pinStore(address: string): Promise<void> {
     const store = await this.loadStore(address);
+    if (!store) {
+      return log(new Error(`Could not open store to pin: ${address}`));
+    }
     const pinHeadHash = (storeAddress: string, ipfsHash: string): void => {
       this.ipfsNode.pinHash(ipfsHash);
     };
