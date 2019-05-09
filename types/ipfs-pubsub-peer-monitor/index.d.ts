@@ -13,6 +13,10 @@ declare module 'ipfs-pubsub-peer-monitor' {
     public stop(): void;
     public getPeers(): Promise<string[]>;
     public hasPeer(): boolean;
+
+    public on(event: 'join', listener: (peer: string) => void): this;
+    public on(event: 'leave', listener: (peer: string) => void): this;
+    public on(event: 'error', listener: (error: Error) => void): this;
   }
 
   export = IpfsPubsubPeerMonitor;

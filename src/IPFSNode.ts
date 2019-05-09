@@ -71,15 +71,16 @@ class IPFSNode {
     return id;
   }
 
-  public async init(): Promise<void> {
+  public async start(): Promise<void> {
     this.id = await this.getId();
     await this.ipfs.pubsub.subscribe(this.room, this.handlePubsubMessage);
     log(`Joined room: ${this.room}`);
 
     this.roomMonitor = new PeerMonitor(this.ipfs.pubsub, this.room);
-    this.roomMonitor.on('join', this.handleNewPeer);
-    this.roomMonitor.on('leave', this.handleLeavePeer);
-    this.roomMonitor.on('error', logError);
+    this.roomMonitor
+      .on('join', this.handleNewPeer)
+      .on('leave', this.handleLeavePeer)
+      .on('error', logError);
   }
 
   public async stop(): Promise<void> {

@@ -17,7 +17,7 @@ const pinner = new Pinner(room, {
   orbitDBDir,
 });
 
-pinner.init().catch(caughtError => {
+pinner.start().catch(caughtError => {
   console.error(caughtError);
   console.error('Pinion crashed. Exiting...');
   process.exit(1);

@@ -79,8 +79,9 @@ class Pinion {
       orbitDBDir,
     });
 
-    this.events.on('pubsub:message', this.handleMessage);
-    this.events.on('stores:pinned', this.publishReplicated);
+    this.events
+      .on('pubsub:message', this.handleMessage)
+      .on('stores:pinned', this.publishReplicated);
   }
 
   public get openStores(): number {
@@ -128,7 +129,7 @@ class Pinion {
             logError('LOAD_STORE: no address given');
             return;
           }
-          this.storeManager.loadStore(address);
+          this.storeManager.loadStore(address).catch(logError);
           break;
         }
         default:
@@ -183,10 +184,10 @@ class Pinion {
     });
   }
 
-  public async init(): Promise<void> {
+  public async start(): Promise<void> {
     logDebug(`Pinner id: ${this.id}`);
-    await this.ipfsNode.init();
-    await this.storeManager.init();
+    await this.ipfsNode.start();
+    await this.storeManager.start();
   }
 
   public async getId(): Promise<string> {

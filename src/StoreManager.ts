@@ -65,7 +65,6 @@ class StoreManager {
     if (!store) {
       return log(new Error(`Could not close store: ${address}`));
     }
-    console.log('closing store ' + store.address);
     return store.close();
   };
 
@@ -79,7 +78,7 @@ class StoreManager {
     });
   };
 
-  public async init(): Promise<void> {
+  public async start(): Promise<void> {
     const ipfs = this.ipfsNode.getIPFS();
     this.orbitNode = await OrbitDB.createInstance(ipfs, {
       AccessControllers,
@@ -88,7 +87,7 @@ class StoreManager {
   }
 
   public async stop(): Promise<void> {
-    // await this.cache.reset();
+    await this.cache.reset();
     return this.orbitNode.disconnect();
   }
 

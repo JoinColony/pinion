@@ -1,6 +1,8 @@
 import { randomBytes } from 'crypto';
 import { promisify } from 'util';
 import IPFS from 'ipfs';
+// Running mulitple IPFS instances is confusing the tests (event though it
+// should not). So we run them serially
 import { serial as test } from 'ava';
 import { EntryData } from 'ipfs-log';
 
@@ -110,7 +112,7 @@ test('pinner joins the defined pubsub room', async t => {
     },
   );
   roomMonitor.on('join', resolveRoomMonitor);
-  await pinner.init();
+  await pinner.start();
   const peer = await roomMonitorPromise;
   t.is(peer, pinnerId);
   await ipfs.pubsub.unsubscribe(room, noop);
@@ -143,7 +145,7 @@ test('pinner pins stuff', async t => {
       publishMessage(ipfs, room, action);
     },
   );
-  await pinner.init();
+  await pinner.start();
   const pinnedStoreData = await new Promise(resolve => {
     pinner.events.on('stores:pinned', async (address, heads) => {
       // @Note this uses internal APIs so this may break any minute
@@ -187,7 +189,7 @@ test('pinner responds upon replication event', async t => {
     };
     publishMessage(ipfs, room, action);
   });
-  await pinner.init();
+  await pinner.start();
   const gotReplicated = await new Promise(resolve => {
     ipfs.pubsub.subscribe(room, (msg: IPFS.PubsubMessage) => {
       const {
@@ -226,7 +228,7 @@ test('pinner ACK actions', async t => {
     };
     publishMessage(ipfs, room, action);
   });
-  await pinner.init();
+  await pinner.start();
   const gotAck = await new Promise(resolve => {
     ipfs.pubsub.subscribe(room, (msg: IPFS.PubsubMessage) => {
       const {
@@ -265,7 +267,7 @@ test('pinner can pin hashes', async t => {
     };
     publishMessage(ipfs, room, action);
   });
-  await pinner.init();
+  await pinner.start();
   const publishedIpfsHash = await new Promise(resolve => {
     pinner.events.on('ipfs:pinned', (hash: string) => {
       resolve(hash);
@@ -300,7 +302,7 @@ test('A third peer can request a previously pinned store', async t => {
     publishMessage(ipfs, room, action);
   });
 
-  await pinner.init();
+  await pinner.start();
   // Wait for pinner to be done
   await new Promise(resolve => pinner.events.on('stores:pinned', resolve));
 
@@ -374,7 +376,7 @@ test('pinner caches stores and limit them to a pre-defined threshold', async t =
     publishMessage(ipfs, room, firstAction);
     publishMessage(ipfs, room, secondAction);
   });
-  await pinner.init();
+  await pinner.start();
   await new Promise(resolve => {
     pinner.events.on('stores:pinned', msg => {
       resolve(msg);
