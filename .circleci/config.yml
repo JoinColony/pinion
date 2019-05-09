@@ -31,7 +31,7 @@ jobs:
       - run:
           name: "Running Tests"
           environment:
-            DAEMON_URL: /ip4/127.0.0.1/tcp/5002
+            TEST_DAEMON_URL: /ip4/127.0.0.1/tcp/5002
             TEST_NODE_URL: /ip4/127.0.0.1/tcp/4002/ipfs
             CI_API_PORT: 5002
           command: |

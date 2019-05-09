@@ -1,6 +1,6 @@
 {
     "linters": {
-        "src/**/*.js": [
+        "src/**/*.ts": [
             "eslint --fix",
             "git add"
         ]

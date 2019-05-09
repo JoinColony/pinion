@@ -18,34 +18,6 @@
 
 ## Usage
 
-Install pinion, set the environment variables for the IPFS node and then run it passing a pinning room as an argument, otherwise, it will use `COLONY_PINNING_ROOM`:
+**Create a new config for your IPFS node, DO NOT USE THE ONES PROVIDED in `data-go` or `data-ipfs`, otherwise the identity of your node will be compromised!**
 
-```bash
-npm i -g @colony/pinion
-# make sure env variables are defined ;)
-pinion 'COLONY_PINNING_ROOM'
-```
-
-```bash
-yarn add global @colony/pinion
-# make sure env variables are defined ;)
-pinion 'COLONY_PINNING_ROOM'
-```
-
-## Environment Variables
-
-#### OPEN_STORES_THRESHOLD
-
-You can also specify the limit of how many stores you wanna keep open simultaneously by passing in an environment variable `OPEN_STORES_THRESHOLD`. The limit is by default set to 1000 stores.
-
-#### OPEN_STORE_TIMEOUT_MS
-
-You can specify for how long pinion keeps a store open before it's closed. The limit is by default `300000` ms
-
-#### DAEMON_URL
-
-You can specify the an IPFS node url as you see fit. The default is `/ip4/127.0.0.1/tcp/5001`
-
-#### ORBITDB_PATH
-
-You can specify the orbit-db path option so stores data are kept in the place of your preference. The default is `./orbitdb`
+For installation and usage see the [Readme](README.md).

@@ -1,28 +1,37 @@
-const { Buffer } = require('buffer');
-const { randomBytes } = require('crypto');
-const { promisify } = require('util');
+import { randomBytes } from 'crypto';
+import { promisify } from 'util';
+import IPFS from 'ipfs';
+// Running mulitple IPFS instances is confusing the tests (event though it
+// should not). So we run them serially
+import { serial as test } from 'ava';
+import { EntryData } from 'ipfs-log';
 
-const test = require('ava').serial;
-const PeerMonitor = require('ipfs-pubsub-peer-monitor');
-const OrbitDB = require('orbit-db');
-const { create: createIPFS } = require('ipfsd-ctl');
+import PeerMonitor = require('ipfs-pubsub-peer-monitor');
+import OrbitDB = require('orbit-db');
+import OrbitDBKVStore from 'orbit-db-kvstore';
+// @ts-ignore We don't want to type that right now
+import { create as createIPFS } from 'ipfsd-ctl';
 
-const Pinner = require('..');
+import Pinion, { ClientAction } from '../Pinion';
+import { ClientActions, PinnerActions } from '../actions';
+const { LOAD_STORE, PIN_STORE, PIN_HASH } = ClientActions;
+const { ACK, REPLICATED } = PinnerActions;
+import AccessControllers from '../AccessControllers';
+import PermissiveAccessController from '../PermissiveAccessController';
+
 const {
-  ACK,
-  LOAD_STORE,
-  PIN_HASH,
-  PIN_STORE,
-  REPLICATED,
-} = require('../actions');
-const AccessControllers = require('../AccessControllers');
-const PermissiveAccessController = require('../PermissiveAccessController');
-
-const { TEST_NODE_URL = '/ip4/127.0.0.1/tcp/4001/ipfs' } = process.env;
+  TEST_NODE_URL = '/ip4/127.0.0.1/tcp/4001/ipfs',
+  TEST_DAEMON_URL,
+} = process.env;
 
 const noop = () => {};
+const pinionOpts = { ipfsDaemonURL: TEST_DAEMON_URL };
 const getId = () => randomBytes(16).toString('hex');
-const publishMessage = async (ipfs, room, action) => {
+const publishMessage = async (
+  ipfs: IPFS,
+  room: string,
+  action: ClientAction,
+) => {
   ipfs.pubsub
     .publish(room, Buffer.from(JSON.stringify(action)))
     .catch(e => console.error(e));
@@ -30,7 +39,7 @@ const publishMessage = async (ipfs, room, action) => {
 
 let portCounter = 0;
 
-const getIPFSNode = async pinnerId => {
+const getIPFSNode = async (pinnerId: string) => {
   portCounter += 1;
   const client = createIPFS({ type: 'js' });
   const ipfsd = await promisify(client.spawn.bind(client))({
@@ -63,13 +72,17 @@ const getIPFSNode = async pinnerId => {
   };
 };
 
-const getOrbitNode = async ipfs =>
+const getOrbitNode = async (ipfs: IPFS) =>
   OrbitDB.createInstance(ipfs, {
     directory: `./orbitdb-test-data/test-${getId()}`,
     AccessControllers,
   });
 
-const createKVStore = async (orbitNode, storeIdentifier, data = {}) => {
+const createKVStore = async (
+  orbitNode: OrbitDB,
+  storeIdentifier: string,
+  data: Record<string, EntryData> = {},
+) => {
   const store = await orbitNode.kvstore(storeIdentifier, {
     // @Note the access controller doesn't really matter, because of a bug in
     // orbit we still have to use the same one, as we share the OrbitDB module
@@ -86,17 +99,20 @@ const createKVStore = async (orbitNode, storeIdentifier, data = {}) => {
 
 test('pinner joins the defined pubsub room', async t => {
   const room = 'JOIN_ROOM';
-  const pinner = new Pinner(room);
+  const pinner = new Pinion(room, pinionOpts);
   const pinnerId = await pinner.getId();
   const { ipfs, teardown } = await getIPFSNode(pinnerId);
   await ipfs.pubsub.subscribe(room, noop);
   const roomMonitor = new PeerMonitor(ipfs.pubsub, room);
-  let resolveRoomMonitor;
-  const roomMonitorPromise = new Promise(resolve => {
-    resolveRoomMonitor = resolve;
-  });
+  // We're initializing it to make ts happy
+  let resolveRoomMonitor = noop;
+  const roomMonitorPromise = new Promise(
+    (resolve): void => {
+      resolveRoomMonitor = resolve;
+    },
+  );
   roomMonitor.on('join', resolveRoomMonitor);
-  await pinner.init();
+  await pinner.start();
   const peer = await roomMonitorPromise;
   t.is(peer, pinnerId);
   await ipfs.pubsub.unsubscribe(room, noop);
@@ -107,7 +123,7 @@ test('pinner joins the defined pubsub room', async t => {
 
 test('pinner pins stuff', async t => {
   const room = 'PIN_ROOM';
-  const pinner = new Pinner(room);
+  const pinner = new Pinion(room, pinionOpts);
   const pinnerId = await pinner.getId();
   const { ipfs, teardown } = await getIPFSNode(pinnerId);
   await ipfs.pubsub.subscribe(room, noop);
@@ -119,16 +135,19 @@ test('pinner pins stuff', async t => {
   const store = await createKVStore(orbit, 'kvstore1', storeData);
   const roomMonitor = new PeerMonitor(ipfs.pubsub, room);
   // On every new peer we tell everyone that we want to pin the store
-  roomMonitor.on('join', () => {
-    const action = {
-      type: PIN_STORE,
-      payload: { address: store.address.toString() },
-    };
-    publishMessage(ipfs, room, action);
-  });
-  await pinner.init();
+  roomMonitor.on(
+    'join',
+    (): void => {
+      const action: ClientAction = {
+        type: PIN_STORE,
+        payload: { address: store.address.toString() },
+      };
+      publishMessage(ipfs, room, action);
+    },
+  );
+  await pinner.start();
   const pinnedStoreData = await new Promise(resolve => {
-    pinner.on('pinned', async (address, heads) => {
+    pinner.events.on('stores:pinned', async (address, heads) => {
       // @Note this uses internal APIs so this may break any minute
       // BUT it's the only way to test whether all the data was pinned
       const nextHead = await ipfs.dag.get(heads[0].next);
@@ -152,7 +171,7 @@ test('pinner pins stuff', async t => {
 
 test('pinner responds upon replication event', async t => {
   const room = 'REPLICATED_PIN_ROOM';
-  const pinner = new Pinner(room);
+  const pinner = new Pinion(room, pinionOpts);
   const pinnerId = await pinner.getId();
   const { ipfs, teardown } = await getIPFSNode(pinnerId);
   await ipfs.pubsub.subscribe(room, noop);
@@ -170,13 +189,13 @@ test('pinner responds upon replication event', async t => {
     };
     publishMessage(ipfs, room, action);
   });
-  await pinner.init();
+  await pinner.start();
   const gotReplicated = await new Promise(resolve => {
-    ipfs.pubsub.subscribe(room, msg => {
+    ipfs.pubsub.subscribe(room, (msg: IPFS.PubsubMessage) => {
       const {
         type,
         payload: { address },
-      } = JSON.parse(msg.data);
+      } = JSON.parse(msg.data.toString());
       if (type === REPLICATED && address === store.address.toString())
         resolve(true);
     });
@@ -191,7 +210,7 @@ test('pinner responds upon replication event', async t => {
 
 test('pinner ACK actions', async t => {
   const room = 'ACK_ROOM';
-  const pinner = new Pinner(room);
+  const pinner = new Pinion(room, pinionOpts);
   const pinnerId = await pinner.getId();
   const { ipfs, teardown } = await getIPFSNode(pinnerId);
   await ipfs.pubsub.subscribe(room, noop);
@@ -209,16 +228,16 @@ test('pinner ACK actions', async t => {
     };
     publishMessage(ipfs, room, action);
   });
-  await pinner.init();
+  await pinner.start();
   const gotAck = await new Promise(resolve => {
-    ipfs.pubsub.subscribe(room, msg => {
+    ipfs.pubsub.subscribe(room, (msg: IPFS.PubsubMessage) => {
       const {
         type,
-        payload: { actionType, address },
-      } = JSON.parse(msg.data);
+        payload: { acknowledgedAction, address },
+      } = JSON.parse(msg.data.toString());
       if (
         type === ACK &&
-        actionType === PIN_STORE &&
+        acknowledgedAction === PIN_STORE &&
         address === store.address.toString()
       )
         resolve(true);
@@ -233,8 +252,9 @@ test('pinner ACK actions', async t => {
 });
 
 test('pinner can pin hashes', async t => {
+  console.log('color');
   const room = 'PIN_HASH_ROOM';
-  const pinner = new Pinner(room);
+  const pinner = new Pinion(room, pinionOpts);
   const pinnerId = await pinner.getId();
   const { ipfs, teardown } = await getIPFSNode(pinnerId);
   await ipfs.pubsub.subscribe(room, noop);
@@ -247,10 +267,10 @@ test('pinner can pin hashes', async t => {
     };
     publishMessage(ipfs, room, action);
   });
-  await pinner.init();
+  await pinner.start();
   const publishedIpfsHash = await new Promise(resolve => {
-    pinner.on('pinnedHash', msg => {
-      resolve(msg);
+    pinner.events.on('ipfs:pinned', (hash: string) => {
+      resolve(hash);
     });
   });
   t.is(publishedIpfsHash, ipfsHash);
@@ -262,7 +282,7 @@ test('pinner can pin hashes', async t => {
 
 test('A third peer can request a previously pinned store', async t => {
   const room = 'LOAD_ROOM';
-  const pinner = new Pinner(room);
+  const pinner = new Pinion(room, pinionOpts);
   const pinnerId = await pinner.getId();
   const { ipfs, teardown } = await getIPFSNode(pinnerId);
   await ipfs.pubsub.subscribe(room, noop);
@@ -282,9 +302,9 @@ test('A third peer can request a previously pinned store', async t => {
     publishMessage(ipfs, room, action);
   });
 
-  await pinner.init();
+  await pinner.start();
   // Wait for pinner to be done
-  await new Promise(resolve => pinner.on('pinned', resolve));
+  await new Promise(resolve => pinner.events.on('stores:pinned', resolve));
 
   // Close the first store (no replication possible)
   await store.close();
@@ -294,7 +314,7 @@ test('A third peer can request a previously pinned store', async t => {
   await ipfs2.pubsub.subscribe(room, noop);
 
   const orbit2 = await getOrbitNode(ipfs2);
-  const store2 = await orbit2.open(store.address.toString(), {
+  const store2 = await orbit2.open<OrbitDBKVStore>(store.address.toString(), {
     accessController: { controller: new PermissiveAccessController() },
   });
 
@@ -308,7 +328,7 @@ test('A third peer can request a previously pinned store', async t => {
     };
     ipfs2.pubsub
       .publish(room, Buffer.from(JSON.stringify(action)))
-      .catch(e => console.error(e));
+      .catch((caughtError: Error) => console.error(caughtError));
   });
 
   await new Promise(resolve => store2.events.on('peer.exchanged', resolve));
@@ -326,10 +346,9 @@ test('A third peer can request a previously pinned store', async t => {
 });
 
 test('pinner caches stores and limit them to a pre-defined threshold', async t => {
-  const openStoresThreshold = process.env.OPEN_STORES_THRESHOLD;
-  process.env.OPEN_STORES_THRESHOLD = 1;
   const room = 'CACHED_PIN_ROOM';
-  const pinner = new Pinner(room);
+  const opts = { ...pinionOpts, maxOpenStores: 1 };
+  const pinner = new Pinion(room, opts);
   const pinnerId = await pinner.getId();
   const { ipfs, teardown } = await getIPFSNode(pinnerId);
   await ipfs.pubsub.subscribe(room, noop);
@@ -357,61 +376,18 @@ test('pinner caches stores and limit them to a pre-defined threshold', async t =
     publishMessage(ipfs, room, firstAction);
     publishMessage(ipfs, room, secondAction);
   });
-  await pinner.init();
+  await pinner.start();
   await new Promise(resolve => {
-    pinner.on('pinned', msg => {
+    pinner.events.on('stores:pinned', msg => {
       resolve(msg);
     });
   });
-  t.is(pinner.countOpenStores(), 1);
+  t.is(pinner.openStores, 1);
   await ipfs.pubsub.unsubscribe(room, noop);
   roomMonitor.stop();
   await orbit.disconnect();
   await store1.close();
   await store2.close();
-  process.env.OPEN_STORES_THRESHOLD = openStoresThreshold;
-  await teardown();
-  return pinner.close();
-});
-
-test('pinner can close store after timeout', async t => {
-  const room = 'TIMEOUT_PIN_ROOM';
-  const pinner = new Pinner(room);
-  const pinnerId = await pinner.getId();
-  const { ipfs, teardown } = await getIPFSNode(pinnerId);
-  await ipfs.pubsub.subscribe(room, noop);
-  const orbit = await getOrbitNode(ipfs);
-  const store = await createKVStore(orbit, 'timeout.kvstore1', {
-    foo: 'bar',
-    biz: 'baz',
-  });
-  const roomMonitor = new PeerMonitor(ipfs.pubsub, room);
-  // On every new peer we tell everyone that we want to pin the store
-  roomMonitor.on('join', () => {
-    const action = {
-      type: PIN_STORE,
-      payload: { address: store.address.toString() },
-    };
-    publishMessage(ipfs, room, action);
-  });
-  await pinner.init();
-  const pinnedStoreAddress = await new Promise(resolve => {
-    pinner.on('pinned', msg => {
-      resolve(msg);
-    });
-  });
-  t.is(pinnedStoreAddress, store.address.toString());
-  const pinnedStore = pinner.getStore(store.address.toString());
-  t.truthy(pinnedStore && pinnedStore.address);
-  await new Promise(resolve => {
-    pinnedStore.options.onClose = () => {
-      resolve();
-    };
-  });
-
-  await ipfs.pubsub.unsubscribe(room, noop);
-  await orbit.disconnect();
-  roomMonitor.stop();
   await teardown();
   return pinner.close();
 });

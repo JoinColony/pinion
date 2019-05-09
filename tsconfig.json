@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "es2018",
+    "module": "commonjs",
+    "sourceMap": true,                    
+    "outDir": "lib",
+    "strict": true,
+    "moduleResolution": "node",
+    "lib": ["es2018"],
+    "allowSyntheticDefaultImports": true,
+    "typeRoots": ["types", "node_modules/@types"]
+  }
+}

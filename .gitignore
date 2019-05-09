@@ -4,11 +4,16 @@ yarn-error.log
 .env
 
 ### IPFS node data
-data/*
-!data/config
-!data/version
-!data/datastore_spec
+data-js/*
+data-go/*
+!data-js/config
+!data-js/version
+!data-go/config
+!data-go/version
 
 ### orbit node data
 orbitdb*
 ipfs-test-data
+
+### tsc output
+lib

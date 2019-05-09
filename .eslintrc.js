@@ -1,30 +1,51 @@
 module.exports = {
+  parser: '@typescript-eslint/parser',
+  parserOptions: {
+    ecmaVersion: 2018,
+    sourceType: 'module',
+  },
   env: {
     commonjs: true,
     es6: true,
   },
   extends: [
-    '@colony/eslint-config-colony',
-  ],
-  overrides: [
-    {
-      files: 'src/__tests__/**/*.js',
-      rules: {
-        'no-param-reassign': 'off',
-        'no-underscore-dangle': 'off',
-        'max-len': 'off',
-      },
-    },
+    'plugin:@typescript-eslint/recommended',
+    'prettier/@typescript-eslint',
+    'plugin:prettier/recommended',
   ],
   rules: {
-    'import/no-extraneous-dependencies': [
+    '@typescript-eslint/indent': ['error', 2],
+    '@typescript-eslint/explicit-member-accessibility': ['error', {
+      accessibility: 'explicit',
+      overrides: {
+        accessors: 'explicit',
+        constructors: 'no-public',
+        methods: 'explicit',
+        properties: 'off',
+        parameterProperties: 'explicit'
+      }
+    }],
+    'max-len': [
       'error',
       {
-        devDependencies: [
-          '**/*.test.js',
-          './*.js',
-        ],
+        ignorePattern: '^import [^,]+ from |^export | implements',
+        ignoreComments: true,
+        ignoreStrings: true,
+        ignoreTemplateLiterals: true,
+        ignoreRegExpLiterals: true,
       },
     ],
+    'no-warning-comments': ['error', {
+      terms: ['@fixme', 'fixme'],
+      location: 'anywhere',
+    }],
   },
+  overrides: [
+    {
+      files: ['*.test.ts'],
+      rules: {
+        '@typescript-eslint/explicit-function-return-type': 'off'
+      }
+    }
+  ]
 };
