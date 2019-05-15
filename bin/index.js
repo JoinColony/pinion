@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const Pinner = require('../lib');
+const { default: Pinner } = require('../lib');
 const { config } = require('dotenv');
 
 if (process.env.NODE_ENV !== 'production') config();
@@ -10,6 +10,10 @@ const {
   PINION_MAX_OPEN_STORES: maxOpenStores,
   PINION_ORBIT_DB_DIR: orbitDBDir,
 } = process.env;
+
+if (!room) {
+  throw new Error('PINION_ROOM has to be specified.');
+}
 
 const pinner = new Pinner(room, {
   ipfsDaemonURL,
