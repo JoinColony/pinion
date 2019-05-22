@@ -18,7 +18,7 @@ import IPFSNode from './IPFSNode';
 const logError = debug('pinner:error');
 const logDebug = debug('pinner:debug');
 const { LOAD_STORE, PIN_STORE, PIN_HASH } = ClientActions;
-const { ACK, HAVE_HEADS, REPLICATED } = PinnerActions;
+const { HAVE_HEADS } = PinnerActions;
 
 interface ClientActionPayload {
   ipfsHash?: string;
@@ -51,8 +51,6 @@ interface Options {
 }
 
 class Pinion {
-  private id: string = '';
-
   private readonly ipfsNode: IPFSNode;
 
   private readonly storeManager: StoreManager;
@@ -81,7 +79,7 @@ class Pinion {
 
     this.events
       .on('pubsub:message', this.handleMessage)
-      .on('stores:pinned', this.publishReplicated);
+      .on('stores:replicated', this.publishHeads);
   }
 
   public get openStores(): number {
@@ -101,59 +99,37 @@ class Pinion {
     if (!action) return;
     const { type, payload } = action;
     const { ipfsHash, address } = payload;
-    // Send ACK
-    try {
-      await this.publishAck(type, message.from, address, ipfsHash);
-    } catch (caughtError) {
-      logError(caughtError);
-    } finally {
-      switch (type) {
-        case PIN_HASH: {
-          if (!ipfsHash) {
-            logError('PIN_HASH: no ipfsHash given');
-            return;
-          }
-          this.ipfsNode.pinHash(ipfsHash).catch(logError);
-          break;
+    switch (type) {
+      case PIN_HASH: {
+        if (!ipfsHash) {
+          logError('PIN_HASH: no ipfsHash given');
+          return;
         }
-        case PIN_STORE: {
-          if (!address) {
-            logError('PIN_STORE: no address given');
-            return;
-          }
-          this.storeManager.pinStore(address).catch(logError);
-          break;
-        }
-        case LOAD_STORE: {
-          if (!address) {
-            logError('LOAD_STORE: no address given');
-            return;
-          }
-          this.storeManager.loadStore(address).catch(logError);
-          break;
-        }
-        default:
-          break;
+        this.ipfsNode.pinHash(ipfsHash).catch(logError);
+        break;
       }
+      case PIN_STORE: {
+        if (!address) {
+          logError('PIN_STORE: no address given');
+          return;
+        }
+        this.storeManager.loadStore(address).catch(logError);
+        break;
+      }
+      case LOAD_STORE: {
+        if (!address) {
+          logError('LOAD_STORE: no address given');
+          return;
+        }
+        this.storeManager.loadStore(address).catch(logError);
+        break;
+      }
+      default:
+        break;
     }
   };
 
-  private publishReplicated = (
-    storeAddress: string,
-    heads: number,
-  ): Promise<void> => {
-    return this.ipfsNode.publish<'REPLICATED', ReplicationMessagePayload>({
-      type: REPLICATED,
-      to: storeAddress,
-      payload: {
-        address: storeAddress,
-        count: heads,
-        timestamp: Date.now(),
-      },
-    });
-  };
-
-  private publishHeads(storeAddress: string, heads: number): Promise<void> {
+  private publishHeads = async (storeAddress: string, heads: number): Promise<void> => {
     return this.ipfsNode.publish<'HAVE_HEADS', ReplicationMessagePayload>({
       type: HAVE_HEADS,
       to: storeAddress,
@@ -165,28 +141,10 @@ class Pinion {
     });
   }
 
-  private publishAck(
-    acknowledgedAction: ClientActions,
-    sender: string,
-    storeAddress?: string,
-    ipfsHash?: string,
-  ): Promise<void> {
-    return this.ipfsNode.publish<'ACK', AckMessagePayload>({
-      type: ACK,
-      to: sender,
-      payload: {
-        acknowledgedAction,
-        sender,
-        address: storeAddress,
-        ipfsHash,
-        timestamp: Date.now(),
-      },
-    });
-  }
 
   public async start(): Promise<void> {
-    logDebug(`Pinner id: ${this.id}`);
     await this.ipfsNode.start();
+    logDebug(`Pinner id: ${this.ipfsNode.id}`);
     await this.storeManager.start();
   }
 

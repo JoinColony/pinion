@@ -5,7 +5,5 @@ export enum ClientActions {
 }
 
 export enum PinnerActions {
-  ACK = 'ACK',
   HAVE_HEADS = 'HAVE_HEADS',
-  REPLICATED = 'REPLICATED',
 }
