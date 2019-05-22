@@ -69,13 +69,32 @@ class StoreManager {
   };
 
   private load = async (address: string): Promise<OrbitDBStore> => {
-    return this.orbitNode.open(address, {
+    log(`Opening store with address ${address}`);
+
+    // I think this is done anyways by orbit, but just in case
+    const pinHeadHash = (storeAddress: string, ipfsHash: string): void => {
+      this.ipfsNode.pinHash(ipfsHash);
+    };
+
+    const handlePeerExchanged = (
+      peer: string,
+      storeAddress: string,
+      heads: Entry[],
+    ): void => {
+      // @todo check why peer is empty!!
+      log(`Store "${address}" replicated for ${peer}`);
+      this.events.emit('stores:replicated', { address, heads, peer });
+    };
+    const store = await this.orbitNode.open(address, {
       accessController: {
         /* @todo: we are using the permissive access controller for now, eventually we want to use our access controllers */
         controller: new PermissiveAccessController(),
       },
       overwrite: false,
     });
+    store.events.on('replicate.progress', pinHeadHash);
+    store.events.on('peer.exchanged', handlePeerExchanged);
+    return store;
   };
 
   public async start(): Promise<void> {
@@ -97,28 +116,6 @@ class StoreManager {
 
   public async closeStore(address: string): Promise<OrbitDBStore | void> {
     return this.cache.remove(address);
-  }
-
-  public async pinStore(address: string): Promise<void> {
-    const store = await this.loadStore(address);
-    if (!store) {
-      return log(new Error(`Could not open store to pin: ${address}`));
-    }
-    const pinHeadHash = (storeAddress: string, ipfsHash: string): void => {
-      this.ipfsNode.pinHash(ipfsHash);
-    };
-    const handlePeerExchanged = (
-      peer: string,
-      storeAddress: string,
-      heads: Entry[],
-    ): void => {
-      log(`Store "${address}" replicated for ${peer}`);
-      this.events.emit('stores:pinned', address, heads);
-      store.events.off('replicate.progress', pinHeadHash);
-      store.events.off('peer.exchanged', handlePeerExchanged);
-    };
-    store.events.on('replicate.progress', pinHeadHash);
-    store.events.on('peer.exchanged', handlePeerExchanged);
   }
 }
 
