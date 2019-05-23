@@ -81,8 +81,14 @@ class StoreManager {
       storeAddress: string,
       heads: Entry[],
     ): void => {
-      // @todo check why peer is empty!!
-      log(`Store "${address}" replicated for ${peer}`);
+      // @todo The `peer` argument sometimes is undefined. It might not be a big
+      // problem as the replication works properly. But we should keep an eye on
+      // it.
+      log(
+        `Store "${address}" replicated for ${peer}. Got ${
+          heads.length
+        } new heads.`,
+      );
       this.events.emit('stores:replicated', { address, heads, peer });
     };
     const store = await this.orbitNode.open(address, {
@@ -110,8 +116,14 @@ class StoreManager {
     return this.orbitNode.disconnect();
   }
 
-  public async loadStore(address: string): Promise<OrbitDBStore | void> {
-    return this.cache.load(address);
+  public async loadStore(address: string): Promise<number> {
+    const store = await this.cache.load(address);
+    if (store) {
+      // This is a private API but there's no other way to access this atm
+      // eslint-disable-next-line dot-notation
+      return store['_oplog'].length;
+    }
+    return 0;
   }
 
   public async closeStore(address: string): Promise<OrbitDBStore | void> {

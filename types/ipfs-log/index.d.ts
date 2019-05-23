@@ -1,8 +1,14 @@
+/* eslint @typescript-eslint/interface-name-prefix: 0 */
+
 declare module 'ipfs-log' {
   import IPFS from 'ipfs';
   import IdentityProvider, { Identity } from 'orbit-db-identity-provider';
 
   type EntryDataPrimitive = string | number | Buffer | Date;
+
+  interface IPFSLog {
+    readonly length: number;
+  }
 
   namespace IPFSLog {
     // It has to be stringifyable. Maybe we can do better

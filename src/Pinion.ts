@@ -84,9 +84,7 @@ class Pinion {
       orbitDBDir,
     });
 
-    this.events
-      .on('pubsub:message', this.handleMessage)
-      .on('stores:replicated', this.publishHeads);
+    this.events.on('pubsub:message', this.handleMessage);
   }
 
   public get openStores(): number {
@@ -117,10 +115,15 @@ class Pinion {
       }
       case REPLICATE: {
         if (!address) {
-          logError('PIN_STORE: no address given');
+          logError('REPLICATE: no address given');
           return;
         }
-        this.storeManager.loadStore(address).catch(logError);
+        try {
+          const heads = await this.storeManager.loadStore(address);
+          await this.publishHeads(address, heads);
+        } catch (caughtError) {
+          logError(caughtError);
+        }
         break;
       }
       default:
@@ -128,16 +131,16 @@ class Pinion {
     }
   };
 
-  private publishHeads = async ({
-    address,
-    heads,
-  }: ReplicationEvent): Promise<void> => {
+  private publishHeads = async (
+    address: string,
+    count: number,
+  ): Promise<void> => {
     return this.ipfsNode.publish<'HAVE_HEADS', ReplicationMessagePayload>({
       type: HAVE_HEADS,
       to: address,
       payload: {
         address,
-        count: heads.length,
+        count,
         timestamp: Date.now(),
       },
     });

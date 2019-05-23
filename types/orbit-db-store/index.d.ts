@@ -1,6 +1,7 @@
 declare module 'orbit-db-store' {
   import EventEmitter from 'events';
   import IPFS from 'ipfs';
+  import IPFSLog from 'ipfs-log';
   import { Identity } from 'orbit-db-identity-provider';
   import { EntryData } from 'ipfs-log';
   import { AccessController } from 'orbit-db-access-controllers';
@@ -17,7 +18,7 @@ declare module 'orbit-db-store' {
       },
     );
 
-    private _oplog: { _length: number };
+    private _oplog: IPFSLog;
     private _addOperation(data: EntryData): void;
 
     public readonly address: OrbitDBStore.StoreAddress;
