@@ -69,13 +69,38 @@ class StoreManager {
   };
 
   private load = async (address: string): Promise<OrbitDBStore> => {
-    return this.orbitNode.open(address, {
+    log(`Opening store with address ${address}`);
+
+    // I think this is done anyways by orbit, but just in case
+    const pinHeadHash = (storeAddress: string, ipfsHash: string): void => {
+      this.ipfsNode.pinHash(ipfsHash);
+    };
+
+    const handlePeerExchanged = (
+      peer: string,
+      storeAddress: string,
+      heads: Entry[],
+    ): void => {
+      // @todo The `peer` argument sometimes is undefined. It might not be a big
+      // problem as the replication works properly. But we should keep an eye on
+      // it.
+      log(
+        `Store "${address}" replicated for ${peer}. Got ${
+          heads.length
+        } new heads.`,
+      );
+      this.events.emit('stores:replicated', { address, heads, peer });
+    };
+    const store = await this.orbitNode.open(address, {
       accessController: {
         /* @todo: we are using the permissive access controller for now, eventually we want to use our access controllers */
         controller: new PermissiveAccessController(),
       },
       overwrite: false,
     });
+    store.events.on('replicate.progress', pinHeadHash);
+    store.events.on('peer.exchanged', handlePeerExchanged);
+    return store;
   };
 
   public async start(): Promise<void> {
@@ -91,34 +116,18 @@ class StoreManager {
     return this.orbitNode.disconnect();
   }
 
-  public async loadStore(address: string): Promise<OrbitDBStore | void> {
-    return this.cache.load(address);
+  public async loadStore(address: string): Promise<number> {
+    const store = await this.cache.load(address);
+    if (store) {
+      // This is a private API but there's no other way to access this atm
+      // eslint-disable-next-line dot-notation
+      return store['_oplog'].length;
+    }
+    return 0;
   }
 
   public async closeStore(address: string): Promise<OrbitDBStore | void> {
     return this.cache.remove(address);
-  }
-
-  public async pinStore(address: string): Promise<void> {
-    const store = await this.loadStore(address);
-    if (!store) {
-      return log(new Error(`Could not open store to pin: ${address}`));
-    }
-    const pinHeadHash = (storeAddress: string, ipfsHash: string): void => {
-      this.ipfsNode.pinHash(ipfsHash);
-    };
-    const handlePeerExchanged = (
-      peer: string,
-      storeAddress: string,
-      heads: Entry[],
-    ): void => {
-      log(`Store "${address}" replicated for ${peer}`);
-      this.events.emit('stores:pinned', address, heads);
-      store.events.off('replicate.progress', pinHeadHash);
-      store.events.off('peer.exchanged', handlePeerExchanged);
-    };
-    store.events.on('replicate.progress', pinHeadHash);
-    store.events.on('peer.exchanged', handlePeerExchanged);
   }
 }
 

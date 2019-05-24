@@ -104,38 +104,19 @@ Pinion is still on its infancy and you might need debug info or a more detailed 
 
 ### Requests
 
-#### `PIN_STORE`
-
-Opens a store, keeps listening to it for a pre-defined timeout and pin its content until the time is up or it's replicated.
-
-##### Parameters
-
-1.  `address` - An orbit-db-store address. Emits a `pinned` event passing the store address back.
-
-##### Payload example
-
-```js
- {
-   type: 'PIN_STORE',
-   payload: { address: '/orbitdb/Qma=/my-store' },
- };
-```
-
----
-
-#### `LOAD_STORE`
+#### `REPLICATE`
 
 Opens a store, loads it and keep listening to it until it's being cleaned up by the LRU cache.
 
 ##### Parameters
 
-1.  `address` - An orbit-db-store address. Emits a `loadedStore` event passing the store address back.
+1.  `address` - An orbit-db-store address.
 
 ##### Payload example
 
 ```js
  {
-   type: 'LOAD_STORE',
+   type: 'REPLICATE',
    payload: { address: '/orbitdb/Qma=/my-store' },
  };
 ```
@@ -165,7 +146,7 @@ Request the IPFS node to pin the content hash.
 
 ##### `HAVE_HEADS`
 
-Published when the pinner has opened a store and it's ready
+Published when the pinner has opened a store and it's ready. It will contain the count of heads that the pinner has for this store.
 
 ##### Payload example
 
@@ -178,48 +159,6 @@ Published when the pinner has opened a store and it's ready
      count: 100,
      timestamp: 10010203993
   },
- }
-```
-
----
-
-##### `ACK`
-
-Published on every incoming message, acknowledging we got it with either the `ipfsHash` or the orbit-db store address
-
-##### Payload example
-
-```js
- {
-   type: 'ACK',
-   to: 'Qma=',
-   payload: {
-     sender: 'Qma=',
-     actionType: 'PIN_STORE',
-     address: '/orbitdb/Qma=/my-store',
-     ipfsHash: 'Qma=...',
-     timestamp: 10010203993
-   },
- }
-```
-
----
-
-##### `REPLICATED`
-
-Published after a store is fully replicated
-
-##### Payload example
-
-```js
- {
-   type: 'REPLICATED',
-   to: '/orbitdb/Qma=/my-store',
-   payload: {
-     address: '/orbitdb/Qma=/my-store',
-     count: 100,
-     timestamp: 10010203993
-   },
  }
 ```
 

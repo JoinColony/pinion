@@ -29,9 +29,9 @@ class IPFSNode {
 
   private readonly room: string;
 
-  private id: string = '';
-
   private roomMonitor!: PeerMonitor;
+
+  public id: string = '';
 
   constructor(events: EventEmitter, ipfsDaemonURL: string, room: string) {
     this.events = events;

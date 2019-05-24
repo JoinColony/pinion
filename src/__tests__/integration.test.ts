@@ -14,8 +14,8 @@ import { create as createIPFS } from 'ipfsd-ctl';
 
 import Pinion, { ClientAction } from '../Pinion';
 import { ClientActions, PinnerActions } from '../actions';
-const { LOAD_STORE, PIN_STORE, PIN_HASH } = ClientActions;
-const { ACK, REPLICATED } = PinnerActions;
+const { REPLICATE, PIN_HASH } = ClientActions;
+const { HAVE_HEADS } = PinnerActions;
 import AccessControllers from '../AccessControllers';
 import PermissiveAccessController from '../PermissiveAccessController';
 
@@ -139,7 +139,7 @@ test('pinner pins stuff', async t => {
     'join',
     (): void => {
       const action: ClientAction = {
-        type: PIN_STORE,
+        type: REPLICATE,
         payload: { address: store.address.toString() },
       };
       publishMessage(ipfs, room, action);
@@ -147,7 +147,7 @@ test('pinner pins stuff', async t => {
   );
   await pinner.start();
   const pinnedStoreData = await new Promise(resolve => {
-    pinner.events.on('stores:pinned', async (address, heads) => {
+    pinner.events.on('stores:replicated', async ({ heads }) => {
       // @Note this uses internal APIs so this may break any minute
       // BUT it's the only way to test whether all the data was pinned
       const nextHead = await ipfs.dag.get(heads[0].next);
@@ -181,69 +181,27 @@ test('pinner responds upon replication event', async t => {
     biz: 'baz',
   });
   const roomMonitor = new PeerMonitor(ipfs.pubsub, room);
+  const haveHeadsPromise = new Promise(resolve => {
+    ipfs.pubsub.subscribe(room, (msg: IPFS.PubsubMessage) => {
+      const {
+        type,
+        payload: { address, count },
+      } = JSON.parse(msg.data.toString());
+      if (type === HAVE_HEADS && address === store.address.toString())
+        resolve(count);
+    });
+  });
   // On every new peer we tell everyone that we want to pin the store
   roomMonitor.on('join', () => {
     const action = {
-      type: PIN_STORE,
+      type: REPLICATE,
       payload: { address: store.address.toString() },
     };
     publishMessage(ipfs, room, action);
   });
   await pinner.start();
-  const gotReplicated = await new Promise(resolve => {
-    ipfs.pubsub.subscribe(room, (msg: IPFS.PubsubMessage) => {
-      const {
-        type,
-        payload: { address },
-      } = JSON.parse(msg.data.toString());
-      if (type === REPLICATED && address === store.address.toString())
-        resolve(true);
-    });
-  });
-  t.truthy(gotReplicated);
-  await ipfs.pubsub.unsubscribe(room, noop);
-  await orbit.disconnect();
-  roomMonitor.stop();
-  await teardown();
-  return pinner.close();
-});
-
-test('pinner ACK actions', async t => {
-  const room = 'ACK_ROOM';
-  const pinner = new Pinion(room, pinionOpts);
-  const pinnerId = await pinner.getId();
-  const { ipfs, teardown } = await getIPFSNode(pinnerId);
-  await ipfs.pubsub.subscribe(room, noop);
-  const orbit = await getOrbitNode(ipfs);
-  const store = await createKVStore(orbit, 'ack.kvstore1', {
-    foo: 'bar',
-    biz: 'baz',
-  });
-  const roomMonitor = new PeerMonitor(ipfs.pubsub, room);
-  // On every new peer we tell everyone that we want to pin the store
-  roomMonitor.on('join', () => {
-    const action = {
-      type: PIN_STORE,
-      payload: { address: store.address.toString() },
-    };
-    publishMessage(ipfs, room, action);
-  });
-  await pinner.start();
-  const gotAck = await new Promise(resolve => {
-    ipfs.pubsub.subscribe(room, (msg: IPFS.PubsubMessage) => {
-      const {
-        type,
-        payload: { acknowledgedAction, address },
-      } = JSON.parse(msg.data.toString());
-      if (
-        type === ACK &&
-        acknowledgedAction === PIN_STORE &&
-        address === store.address.toString()
-      )
-        resolve(true);
-    });
-  });
-  t.truthy(gotAck);
+  const heads = await haveHeadsPromise;
+  t.is(heads, 0);
   await ipfs.pubsub.unsubscribe(room, noop);
   await orbit.disconnect();
   roomMonitor.stop();
@@ -252,7 +210,6 @@ test('pinner ACK actions', async t => {
 });
 
 test('pinner can pin hashes', async t => {
-  console.log('color');
   const room = 'PIN_HASH_ROOM';
   const pinner = new Pinion(room, pinionOpts);
   const pinnerId = await pinner.getId();
@@ -296,7 +253,7 @@ test('A third peer can request a previously pinned store', async t => {
   // On every new peer we tell everyone that we want to pin the store
   roomMonitor.on('join', () => {
     const action = {
-      type: PIN_STORE,
+      type: REPLICATE,
       payload: { address: store.address.toString() },
     };
     publishMessage(ipfs, room, action);
@@ -304,7 +261,7 @@ test('A third peer can request a previously pinned store', async t => {
 
   await pinner.start();
   // Wait for pinner to be done
-  await new Promise(resolve => pinner.events.on('stores:pinned', resolve));
+  await new Promise(resolve => pinner.events.on('stores:replicated', resolve));
 
   // Close the first store (no replication possible)
   await store.close();
@@ -323,7 +280,7 @@ test('A third peer can request a previously pinned store', async t => {
   // On every new peer we tell everyone that we want to load the store
   roomMonitor2.on('join', () => {
     const action = {
-      type: LOAD_STORE,
+      type: REPLICATE,
       payload: { address: store.address.toString() },
     };
     ipfs2.pubsub
@@ -366,11 +323,11 @@ test('pinner caches stores and limit them to a pre-defined threshold', async t =
   // On every new peer we tell everyone that we want to pin the store
   roomMonitor.on('join', () => {
     const firstAction = {
-      type: PIN_STORE,
+      type: REPLICATE,
       payload: { address: store1.address.toString() },
     };
     const secondAction = {
-      type: PIN_STORE,
+      type: REPLICATE,
       payload: { address: store2.address.toString() },
     };
     publishMessage(ipfs, room, firstAction);
@@ -378,7 +335,7 @@ test('pinner caches stores and limit them to a pre-defined threshold', async t =
   });
   await pinner.start();
   await new Promise(resolve => {
-    pinner.events.on('stores:pinned', msg => {
+    pinner.events.on('stores:replicated', msg => {
       resolve(msg);
     });
   });
