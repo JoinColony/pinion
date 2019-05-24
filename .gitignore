@@ -10,6 +10,7 @@ data-go/*
 !data-js/version
 !data-go/config
 !data-go/version
+!data-go/datastore_spec
 
 ### orbit node data
 orbitdb*
