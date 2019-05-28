@@ -70,26 +70,9 @@ class StoreManager {
 
   private load = async (address: string): Promise<OrbitDBStore> => {
     log(`Opening store with address ${address}`);
-
     // I think this is done anyways by orbit, but just in case
     const pinHeadHash = (storeAddress: string, ipfsHash: string): void => {
       this.ipfsNode.pinHash(ipfsHash);
-    };
-
-    const handlePeerExchanged = (
-      peer: string,
-      storeAddress: string,
-      heads: Entry[],
-    ): void => {
-      // @todo The `peer` argument sometimes is undefined. It might not be a big
-      // problem as the replication works properly. But we should keep an eye on
-      // it.
-      log(
-        `Store "${address}" replicated for ${peer}. Got ${
-          heads.length
-        } new heads.`,
-      );
-      this.events.emit('stores:replicated', { address, heads, peer });
     };
     const store = await this.orbitNode.open(address, {
       accessController: {
@@ -99,7 +82,6 @@ class StoreManager {
       overwrite: false,
     });
     store.events.on('replicate.progress', pinHeadHash);
-    store.events.on('peer.exchanged', handlePeerExchanged);
     return store;
   };
 
