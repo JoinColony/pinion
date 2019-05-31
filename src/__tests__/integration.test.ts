@@ -115,10 +115,18 @@ const waitForHeads = (
     );
     const timeout = setTimeout(reject, 10000);
     const handleMessage = (msg: IPFS.PubsubMessage) => {
+      let action;
+      try {
+        action = JSON.parse(msg.data.toString());
+      } catch (caughtError) {
+        throw new Error(
+          `Could not parse message data: ${caughtError.toString()}`,
+        );
+      }
       const {
         type,
         payload: { address, count },
-      } = JSON.parse(msg.data.toString());
+      } = action;
       if (type === HAVE_HEADS && address === storeAddress && count >= heads) {
         ipfs.pubsub.unsubscribe(room, handleMessage).catch(reject);
         clearTimeout(timeout);
