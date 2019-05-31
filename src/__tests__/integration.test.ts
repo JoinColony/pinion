@@ -97,6 +97,46 @@ const createKVStore = async (
   return store;
 };
 
+// Wait for replication until we have a certain amount of heads in a store
+const waitForHeads = (
+  ipfs: IPFS,
+  storeAddress: string,
+  room: string,
+  heads: number,
+): Promise<number> =>
+  new Promise((resolve, reject) => {
+    const action: ClientAction = {
+      type: REPLICATE,
+      payload: { address: storeAddress },
+    };
+    const interval = setInterval(
+      () => publishMessage(ipfs, room, action),
+      2000,
+    );
+    const timeout = setTimeout(reject, 10000);
+    const handleMessage = (msg: IPFS.PubsubMessage) => {
+      let action;
+      try {
+        action = JSON.parse(msg.data.toString());
+      } catch (caughtError) {
+        throw new Error(
+          `Could not parse message data: ${caughtError.toString()}`,
+        );
+      }
+      const {
+        type,
+        payload: { address, count },
+      } = action;
+      if (type === HAVE_HEADS && address === storeAddress && count >= heads) {
+        ipfs.pubsub.unsubscribe(room, handleMessage).catch(reject);
+        clearTimeout(timeout);
+        clearInterval(interval);
+        resolve(count);
+      }
+    };
+    ipfs.pubsub.subscribe(room, handleMessage).catch(reject);
+  });
+
 test('pinner joins the defined pubsub room', async t => {
   const room = 'JOIN_ROOM';
   const pinner = new Pinion(room, pinionOpts);
@@ -116,54 +156,6 @@ test('pinner joins the defined pubsub room', async t => {
   const peer = await roomMonitorPromise;
   t.is(peer, pinnerId);
   await ipfs.pubsub.unsubscribe(room, noop);
-  roomMonitor.stop();
-  await teardown();
-  return pinner.close();
-});
-
-test('pinner pins stuff', async t => {
-  const room = 'PIN_ROOM';
-  const pinner = new Pinion(room, pinionOpts);
-  const pinnerId = await pinner.getId();
-  const { ipfs, teardown } = await getIPFSNode(pinnerId);
-  await ipfs.pubsub.subscribe(room, noop);
-  const orbit = await getOrbitNode(ipfs);
-  const storeData = {
-    foo: 'bar',
-    biz: 'baz',
-  };
-  const store = await createKVStore(orbit, 'kvstore1', storeData);
-  const roomMonitor = new PeerMonitor(ipfs.pubsub, room);
-  // On every new peer we tell everyone that we want to pin the store
-  roomMonitor.on(
-    'join',
-    (): void => {
-      const action: ClientAction = {
-        type: REPLICATE,
-        payload: { address: store.address.toString() },
-      };
-      publishMessage(ipfs, room, action);
-    },
-  );
-  await pinner.start();
-  const pinnedStoreData = await new Promise(resolve => {
-    pinner.events.on('stores:replicated', async ({ heads }) => {
-      // @Note this uses internal APIs so this may break any minute
-      // BUT it's the only way to test whether all the data was pinned
-      const nextHead = await ipfs.dag.get(heads[0].next);
-      const result = [heads[0].payload, nextHead.value.payload].reduce(
-        (data, current) => {
-          data[current.key] = current.value;
-          return data;
-        },
-        {},
-      );
-      resolve(result);
-    });
-  });
-  t.deepEqual(pinnedStoreData, storeData);
-  await ipfs.pubsub.unsubscribe(room, noop);
-  await orbit.disconnect();
   roomMonitor.stop();
   await teardown();
   return pinner.close();
@@ -202,6 +194,40 @@ test('pinner responds upon replication event', async t => {
   await pinner.start();
   const heads = await haveHeadsPromise;
   t.is(heads, 0);
+  await ipfs.pubsub.unsubscribe(room, noop);
+  await orbit.disconnect();
+  roomMonitor.stop();
+  await teardown();
+  return pinner.close();
+});
+
+test('pinner pins stuff', async t => {
+  const room = 'PIN_ROOM';
+  const pinner = new Pinion(room, pinionOpts);
+  const pinnerId = await pinner.getId();
+  const { ipfs, teardown } = await getIPFSNode(pinnerId);
+  await ipfs.pubsub.subscribe(room, noop);
+  const orbit = await getOrbitNode(ipfs);
+  const storeData = {
+    foo: 'bar',
+    biz: 'baz',
+  };
+  const store = await createKVStore(orbit, 'kvstore1', storeData);
+  const roomMonitor = new PeerMonitor(ipfs.pubsub, room);
+  // On every new peer we tell everyone that we want to pin the store
+  roomMonitor.on(
+    'join',
+    (): void => {
+      const action: ClientAction = {
+        type: REPLICATE,
+        payload: { address: store.address.toString() },
+      };
+      publishMessage(ipfs, room, action);
+    },
+  );
+  await pinner.start();
+  const heads = await waitForHeads(ipfs, store.address.toString(), room, 2);
+  t.is(heads, 2);
   await ipfs.pubsub.unsubscribe(room, noop);
   await orbit.disconnect();
   roomMonitor.stop();
@@ -261,7 +287,7 @@ test('A third peer can request a previously pinned store', async t => {
 
   await pinner.start();
   // Wait for pinner to be done
-  await new Promise(resolve => pinner.events.on('stores:replicated', resolve));
+  await waitForHeads(ipfs, store.address.toString(), room, 2);
 
   // Close the first store (no replication possible)
   await store.close();
@@ -288,7 +314,15 @@ test('A third peer can request a previously pinned store', async t => {
       .catch((caughtError: Error) => console.error(caughtError));
   });
 
-  await new Promise(resolve => store2.events.on('peer.exchanged', resolve));
+  // Wait local store to be replicated
+  await new Promise(resolve => {
+    const interval = setInterval(() => {
+      if (store2['_oplog'].length >= 2) {
+        clearInterval(interval);
+        resolve();
+      }
+    }, 1000);
+  });
 
   const data = store2.get('foo');
   t.is(data, 'bar');
@@ -334,11 +368,10 @@ test('pinner caches stores and limit them to a pre-defined threshold', async t =
     publishMessage(ipfs, room, secondAction);
   });
   await pinner.start();
-  await new Promise(resolve => {
-    pinner.events.on('stores:replicated', msg => {
-      resolve(msg);
-    });
-  });
+
+  await waitForHeads(ipfs, store1.address.toString(), room, 2);
+  await waitForHeads(ipfs, store2.address.toString(), room, 2);
+
   t.is(pinner.openStores, 1);
   await ipfs.pubsub.unsubscribe(room, noop);
   roomMonitor.stop();
