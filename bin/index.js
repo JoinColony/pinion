@@ -21,8 +21,13 @@ const pinner = new Pinner(room, {
   orbitDBDir,
 });
 
-pinner.start().catch(caughtError => {
-  console.error(caughtError);
-  console.error('Pinion crashed. Exiting...');
-  process.exit(1);
-});
+pinner
+  .start()
+  .then(() => {
+    console.info(`Pinner started in room ${room} with daemon ${ipfsDaemonURL}`);
+  })
+  .catch(caughtError => {
+    console.error(caughtError);
+    console.error('Pinion crashed. Exiting...');
+    process.exit(1);
+  });

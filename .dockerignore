@@ -1,0 +1,16 @@
+### Standard stuff
+node_modules
+yarn-error.log
+.env
+.git
+
+### IPFS node data
+data-js/*
+data-go/*
+
+### orbit node data
+orbitdb*
+ipfs-test-data
+
+### tsc output
+lib
