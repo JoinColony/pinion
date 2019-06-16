@@ -14,10 +14,11 @@ import { create as createIPFS } from 'ipfsd-ctl';
 
 import Pinion, { ClientAction } from '../Pinion';
 import { ClientActions, PinnerActions } from '../actions';
-const { REPLICATE, PIN_HASH } = ClientActions;
-const { HAVE_HEADS } = PinnerActions;
 import AccessControllers from '../AccessControllers';
 import PermissiveAccessController from '../PermissiveAccessController';
+
+const { REPLICATE, PIN_HASH, ANNOUNCE_CLIENT } = ClientActions;
+const { HAVE_HEADS, ANNOUNCE_PINNER } = PinnerActions;
 
 const {
   TEST_NODE_URL = '/ip4/127.0.0.1/tcp/4001/ipfs',
@@ -378,6 +379,57 @@ test('pinner caches stores and limit them to a pre-defined threshold', async t =
   await orbit.disconnect();
   await store1.close();
   await store2.close();
+  await teardown();
+  return pinner.close();
+});
+
+test('pinner responds upon client announcement event', async t => {
+  const room = 'CLIENT_ANNOUNCEMENT_ROOM';
+  const pinner = new Pinion(room, pinionOpts);
+  const pinnerId = await pinner.getId();
+  const { ipfs, teardown } = await getIPFSNode(pinnerId);
+  await ipfs.pubsub.subscribe(room, noop);
+  const roomMonitor = new PeerMonitor(ipfs.pubsub, room);
+
+  const pinnerAnnouncePromise: Promise<{
+    type: string;
+    payload: { address: string };
+  }> = new Promise(resolve => {
+    ipfs.pubsub.subscribe(room, (msg: IPFS.PubsubMessage) => {
+      const action = JSON.parse(msg.data.toString());
+      if (action.type === ANNOUNCE_PINNER) resolve(action);
+    });
+  });
+
+  await pinner.start();
+
+  // The pinner should have announced itself
+  const pinnerAnnounceAction = await pinnerAnnouncePromise;
+  t.is(pinnerAnnounceAction.payload.address, pinnerId);
+
+  const clientAnnounceResponsePromise: Promise<{
+    type: string;
+    to: string;
+    payload: { address: string };
+  }> = new Promise(resolve => {
+    ipfs.pubsub.subscribe(room, (msg: IPFS.PubsubMessage) => {
+      const action = JSON.parse(msg.data.toString());
+      if (action.type === ANNOUNCE_PINNER) resolve(action);
+    });
+  });
+
+  await publishMessage(ipfs, room, {
+    type: ANNOUNCE_CLIENT,
+    payload: { address: 'client address' },
+  });
+
+  // The pinner should announce itself in response to a client announcement
+  const clientAnnouncementResponse = await clientAnnounceResponsePromise;
+  t.is(clientAnnouncementResponse.payload.address, pinnerId);
+  t.is(clientAnnouncementResponse.to, 'client address');
+
+  await ipfs.pubsub.unsubscribe(room, noop);
+  roomMonitor.stop();
   await teardown();
   return pinner.close();
 });

@@ -18,8 +18,8 @@ import IPFSNode from './IPFSNode';
 
 const logError = debug('pinner:error');
 const logDebug = debug('pinner:debug');
-const { REPLICATE, PIN_HASH } = ClientActions;
-const { HAVE_HEADS } = PinnerActions;
+const { REPLICATE, PIN_HASH, ANNOUNCE_CLIENT } = ClientActions;
+const { HAVE_HEADS, ANNOUNCE_PINNER } = PinnerActions;
 
 interface ClientActionPayload {
   ipfsHash?: string;
@@ -126,6 +126,17 @@ class Pinion {
         }
         break;
       }
+      case ANNOUNCE_CLIENT: {
+        if (!address) {
+          logError('ANNOUNCE_CLIENT: no address given');
+          return;
+        }
+        try {
+          await this.announce(address);
+        } catch (caughtError) {
+          logError(caughtError);
+        }
+      }
       default:
         break;
     }
@@ -150,6 +161,7 @@ class Pinion {
     await this.ipfsNode.start();
     logDebug(`Pinner id: ${this.ipfsNode.id}`);
     await this.storeManager.start();
+    await this.announce();
   }
 
   public async getId(): Promise<string> {
@@ -161,6 +173,16 @@ class Pinion {
     await this.ipfsNode.stop();
     await this.storeManager.stop();
     this.events.removeAllListeners();
+  }
+
+  public async announce(address?: string): Promise<void> {
+    return this.ipfsNode.publish({
+      type: ANNOUNCE_PINNER,
+      payload: {
+        address: await this.getId(),
+      },
+      ...(address ? { to: address } : {}),
+    });
   }
 }
 
