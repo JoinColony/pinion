@@ -142,6 +142,25 @@ Request the IPFS node to pin the content hash.
 
 ---
 
+#### `ANNOUNCE_CLIENT`
+
+Announce a client joining the room explicitly.
+
+##### Parameters
+
+1.  `address` - Address of the client peer.
+
+##### Payload example
+
+```js
+ {
+   type: 'PIN_HASH',
+   payload: { address: 'Qma=...' },
+ };
+```
+
+---
+
 #### Responses
 
 ##### `HAVE_HEADS`
@@ -158,6 +177,23 @@ Published when the pinner has opened a store and it's ready. It will contain the
      address: '/orbitdb/Qma=/my-store/<signature>',
      count: 100,
      timestamp: 10010203993
+  },
+ }
+```
+
+
+##### `ANNOUNCE_PINNER`
+
+Published when the pinner has started, or in response to an `ANNOUNCE_CLIENT` message.
+
+##### Payload example
+
+```js
+ {
+   type: 'ANNOUNCE_PINNER',
+   to: 'Qm...', // this is only included as a response
+   payload: {
+     address: 'Qm...',
   },
  }
 ```
