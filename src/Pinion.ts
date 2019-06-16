@@ -23,6 +23,7 @@ const { HAVE_HEADS, ANNOUNCE_PINNER } = PinnerActions;
 
 interface ClientActionPayload {
   ipfsHash?: string;
+  ipfsId?: string;
   address?: string;
 }
 
@@ -103,7 +104,7 @@ class Pinion {
 
     if (!action) return;
     const { type, payload } = action;
-    const { ipfsHash, address } = payload;
+    const { ipfsHash, ipfsId, address } = payload;
     switch (type) {
       case PIN_HASH: {
         if (!ipfsHash) {
@@ -127,12 +128,12 @@ class Pinion {
         break;
       }
       case ANNOUNCE_CLIENT: {
-        if (!address) {
-          logError('ANNOUNCE_CLIENT: no address given');
+        if (!ipfsId) {
+          logError('ANNOUNCE_CLIENT: no ipfsId given');
           return;
         }
         try {
-          await this.announce(address);
+          await this.announce(ipfsId);
         } catch (caughtError) {
           logError(caughtError);
         }
@@ -175,13 +176,13 @@ class Pinion {
     this.events.removeAllListeners();
   }
 
-  public async announce(address?: string): Promise<void> {
+  public async announce(ipfsId?: string): Promise<void> {
     return this.ipfsNode.publish({
       type: ANNOUNCE_PINNER,
       payload: {
-        address: await this.getId(),
+        ipfsId: await this.getId(),
       },
-      ...(address ? { to: address } : {}),
+      ...(ipfsId ? { to: ipfsId } : {}),
     });
   }
 }

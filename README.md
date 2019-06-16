@@ -148,14 +148,14 @@ Announce a client joining the room explicitly.
 
 ##### Parameters
 
-1.  `address` - Address of the client peer.
+1.  `ipfsId` - IPFS ID of the client peer.
 
 ##### Payload example
 
 ```js
  {
-   type: 'PIN_HASH',
-   payload: { address: 'Qma=...' },
+   type: 'ANNOUNCE_CLIENT',
+   payload: { ipfsId: 'Qm...' },
  };
 ```
 
@@ -191,9 +191,9 @@ Published when the pinner has started, or in response to an `ANNOUNCE_CLIENT` me
 ```js
  {
    type: 'ANNOUNCE_PINNER',
-   to: 'Qm...', // this is only included as a response
+   to: 'Qm...', // this is only included as a response to an `ANNOUNCE_CLIENT` message
    payload: {
-     address: 'Qm...',
+     ipfsId: 'Qm...',
   },
  }
 ```

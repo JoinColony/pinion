@@ -393,7 +393,7 @@ test('pinner responds upon client announcement event', async t => {
 
   const pinnerAnnouncePromise: Promise<{
     type: string;
-    payload: { address: string };
+    payload: { ipfsId: string };
   }> = new Promise(resolve => {
     ipfs.pubsub.subscribe(room, (msg: IPFS.PubsubMessage) => {
       const action = JSON.parse(msg.data.toString());
@@ -405,12 +405,12 @@ test('pinner responds upon client announcement event', async t => {
 
   // The pinner should have announced itself
   const pinnerAnnounceAction = await pinnerAnnouncePromise;
-  t.is(pinnerAnnounceAction.payload.address, pinnerId);
+  t.is(pinnerAnnounceAction.payload.ipfsId, pinnerId);
 
   const clientAnnounceResponsePromise: Promise<{
     type: string;
     to: string;
-    payload: { address: string };
+    payload: { ipfsId: string };
   }> = new Promise(resolve => {
     ipfs.pubsub.subscribe(room, (msg: IPFS.PubsubMessage) => {
       const action = JSON.parse(msg.data.toString());
@@ -420,13 +420,13 @@ test('pinner responds upon client announcement event', async t => {
 
   await publishMessage(ipfs, room, {
     type: ANNOUNCE_CLIENT,
-    payload: { address: 'client address' },
+    payload: { ipfsId: 'client id' },
   });
 
   // The pinner should announce itself in response to a client announcement
   const clientAnnouncementResponse = await clientAnnounceResponsePromise;
-  t.is(clientAnnouncementResponse.payload.address, pinnerId);
-  t.is(clientAnnouncementResponse.to, 'client address');
+  t.is(clientAnnouncementResponse.payload.ipfsId, pinnerId);
+  t.is(clientAnnouncementResponse.to, 'client id');
 
   await ipfs.pubsub.unsubscribe(room, noop);
   roomMonitor.stop();
