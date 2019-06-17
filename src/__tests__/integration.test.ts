@@ -17,7 +17,7 @@ import { ClientActions, PinnerActions } from '../actions';
 import AccessControllers from '../AccessControllers';
 import PermissiveAccessController from '../PermissiveAccessController';
 
-const { REPLICATE, PIN_HASH, ANNOUNCE_CLIENT } = ClientActions;
+const { REPLICATE, PIN_HASH } = ClientActions;
 const { HAVE_HEADS, ANNOUNCE_PINNER } = PinnerActions;
 
 const {
@@ -407,7 +407,7 @@ test('pinner responds upon client announcement event', async t => {
   const pinnerAnnounceAction = await pinnerAnnouncePromise;
   t.is(pinnerAnnounceAction.payload.ipfsId, pinnerId);
 
-  const clientAnnounceResponsePromise: Promise<{
+  const newPeerResponsePromise: Promise<{
     type: string;
     to: string;
     payload: { ipfsId: string };
@@ -418,15 +418,12 @@ test('pinner responds upon client announcement event', async t => {
     });
   });
 
-  await publishMessage(ipfs, room, {
-    type: ANNOUNCE_CLIENT,
-    payload: { ipfsId: 'client id' },
-  });
+  pinner.events.emit('pubsub:newpeer', 'client id');
 
-  // The pinner should announce itself in response to a client announcement
-  const clientAnnouncementResponse = await clientAnnounceResponsePromise;
-  t.is(clientAnnouncementResponse.payload.ipfsId, pinnerId);
-  t.is(clientAnnouncementResponse.to, 'client id');
+  // The pinner should announce itself in response to a new peer joining
+  const newPeerResponse = await newPeerResponsePromise;
+  t.is(newPeerResponse.payload.ipfsId, pinnerId);
+  t.is(newPeerResponse.to, 'client id');
 
   await ipfs.pubsub.unsubscribe(room, noop);
   roomMonitor.stop();

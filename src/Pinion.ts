@@ -18,12 +18,11 @@ import IPFSNode from './IPFSNode';
 
 const logError = debug('pinner:error');
 const logDebug = debug('pinner:debug');
-const { REPLICATE, PIN_HASH, ANNOUNCE_CLIENT } = ClientActions;
+const { REPLICATE, PIN_HASH } = ClientActions;
 const { HAVE_HEADS, ANNOUNCE_PINNER } = PinnerActions;
 
 interface ClientActionPayload {
   ipfsHash?: string;
-  ipfsId?: string;
   address?: string;
 }
 
@@ -86,6 +85,7 @@ class Pinion {
     });
 
     this.events.on('pubsub:message', this.handleMessage);
+    this.events.on('pubsub:newpeer', this.handleNewPeer);
   }
 
   public get openStores(): number {
@@ -104,7 +104,7 @@ class Pinion {
 
     if (!action) return;
     const { type, payload } = action;
-    const { ipfsHash, ipfsId, address } = payload;
+    const { ipfsHash, address } = payload;
     switch (type) {
       case PIN_HASH: {
         if (!ipfsHash) {
@@ -127,21 +127,24 @@ class Pinion {
         }
         break;
       }
-      case ANNOUNCE_CLIENT: {
-        if (!ipfsId) {
-          logError('ANNOUNCE_CLIENT: no ipfsId given');
-          return;
-        }
-        try {
-          await this.announce(ipfsId);
-        } catch (caughtError) {
-          logError(caughtError);
-        }
-      }
       default:
         break;
     }
   };
+
+  private handleNewPeer = (peer: string): void => {
+    this.announce(peer).catch(logError);
+  };
+
+  private async announce(ipfsId?: string): Promise<void> {
+    return this.ipfsNode.publish({
+      type: ANNOUNCE_PINNER,
+      payload: {
+        ipfsId: await this.getId(),
+      },
+      ...(ipfsId ? { to: ipfsId } : {}),
+    });
+  }
 
   private publishHeads = async (
     address: string,
@@ -174,16 +177,6 @@ class Pinion {
     await this.ipfsNode.stop();
     await this.storeManager.stop();
     this.events.removeAllListeners();
-  }
-
-  public async announce(ipfsId?: string): Promise<void> {
-    return this.ipfsNode.publish({
-      type: ANNOUNCE_PINNER,
-      payload: {
-        ipfsId: await this.getId(),
-      },
-      ...(ipfsId ? { to: ipfsId } : {}),
-    });
   }
 }
 
