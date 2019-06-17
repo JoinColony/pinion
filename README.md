@@ -142,25 +142,6 @@ Request the IPFS node to pin the content hash.
 
 ---
 
-#### `ANNOUNCE_CLIENT`
-
-Announce a client joining the room explicitly.
-
-##### Parameters
-
-1.  `ipfsId` - IPFS ID of the client peer.
-
-##### Payload example
-
-```js
- {
-   type: 'ANNOUNCE_CLIENT',
-   payload: { ipfsId: 'Qm...' },
- };
-```
-
----
-
 #### Responses
 
 ##### `HAVE_HEADS`
@@ -191,7 +172,6 @@ Published when the pinner has started, or in response to an `ANNOUNCE_CLIENT` me
 ```js
  {
    type: 'ANNOUNCE_PINNER',
-   to: 'Qm...', // this is only included as a response to an `ANNOUNCE_CLIENT` message
    payload: {
      ipfsId: 'Qm...',
   },

@@ -383,8 +383,8 @@ test('pinner caches stores and limit them to a pre-defined threshold', async t =
   return pinner.close();
 });
 
-test('pinner responds upon client announcement event', async t => {
-  const room = 'CLIENT_ANNOUNCEMENT_ROOM';
+test('pinner announces its presence to peers', async t => {
+  const room = 'PINNER_ANNOUNCEMENT_ROOM';
   const pinner = new Pinion(room, pinionOpts);
   const pinnerId = await pinner.getId();
   const { ipfs, teardown } = await getIPFSNode(pinnerId);
@@ -403,13 +403,12 @@ test('pinner responds upon client announcement event', async t => {
 
   await pinner.start();
 
-  // The pinner should have announced itself
+  // The pinner should have announced itself on start
   const pinnerAnnounceAction = await pinnerAnnouncePromise;
   t.is(pinnerAnnounceAction.payload.ipfsId, pinnerId);
 
   const newPeerResponsePromise: Promise<{
     type: string;
-    to: string;
     payload: { ipfsId: string };
   }> = new Promise(resolve => {
     ipfs.pubsub.subscribe(room, (msg: IPFS.PubsubMessage) => {
@@ -423,7 +422,6 @@ test('pinner responds upon client announcement event', async t => {
   // The pinner should announce itself in response to a new peer joining
   const newPeerResponse = await newPeerResponsePromise;
   t.is(newPeerResponse.payload.ipfsId, pinnerId);
-  t.is(newPeerResponse.to, 'client id');
 
   await ipfs.pubsub.unsubscribe(room, noop);
   roomMonitor.stop();

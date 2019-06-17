@@ -132,17 +132,16 @@ class Pinion {
     }
   };
 
-  private handleNewPeer = (peer: string): void => {
-    this.announce(peer).catch(logError);
+  private handleNewPeer = (): void => {
+    this.announce().catch(logError);
   };
 
-  private async announce(ipfsId?: string): Promise<void> {
+  private async announce(): Promise<void> {
     return this.ipfsNode.publish({
       type: ANNOUNCE_PINNER,
       payload: {
         ipfsId: await this.getId(),
       },
-      ...(ipfsId ? { to: ipfsId } : {}),
     });
   }
 
@@ -165,7 +164,7 @@ class Pinion {
     await this.ipfsNode.start();
     logDebug(`Pinner id: ${this.ipfsNode.id}`);
     await this.storeManager.start();
-    await this.announce();
+    await this.announce(); // Announce on start because the room may have peers already
   }
 
   public async getId(): Promise<string> {
