@@ -9311,10 +9311,10 @@ vise@3.x.x:
   dependencies:
     hoek "6.x.x"
 
-wait-on@3.2.0:
-  version "3.2.0"
-  resolved "https://registry.yarnpkg.com/wait-on/-/wait-on-3.2.0.tgz#c83924df0fc42a675c678324c49c769d378bcb85"
-  integrity sha512-QUGNKlKLDyY6W/qHdxaRlXUAgLPe+3mLL/tRByHpRNcHs/c7dZXbu+OnJWGNux6tU1WFh/Z8aEwvbuzSAu79Zg==
+wait-on@3.3.0-beta.0:
+  version "3.3.0-beta.0"
+  resolved "https://registry.yarnpkg.com/wait-on/-/wait-on-3.3.0-beta.0.tgz#834f906ed68644284aaa9ad074ddd32a5f7fb6c4"
+  integrity sha512-vX+TlY5ttyruUS5U24gdxOwKRQX5SVQD6Ll7Gq26IyW7U9ISnFNiZhEtry3HVmcxYnv05k5t6He4iw7iI/t4ug==
   dependencies:
     core-js "^2.5.7"
     joi "^13.0.0"
