@@ -44,7 +44,7 @@
     "eslint-config-prettier": "4.2.0",
     "eslint-plugin-prettier": "3.0.1",
     "husky": "2.1.0",
-    "ipfs": "0.35.0",
+    "ipfs": "0.36.4",
     "ipfsd-ctl": "0.42.2",
     "lint-staged": "8.1.0",
     "prettier": "1.17.0",
