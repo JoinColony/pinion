@@ -4,5 +4,6 @@ export enum ClientActions {
 }
 
 export enum PinnerActions {
+  ANNOUNCE_PINNER = 'ANNOUNCE_PINNER',
   HAVE_HEADS = 'HAVE_HEADS',
 }

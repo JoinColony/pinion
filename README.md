@@ -162,6 +162,22 @@ Published when the pinner has opened a store and it's ready. It will contain the
  }
 ```
 
+
+##### `ANNOUNCE_PINNER`
+
+Published when the pinner has started, or in response to an `ANNOUNCE_CLIENT` message.
+
+##### Payload example
+
+```js
+ {
+   type: 'ANNOUNCE_PINNER',
+   payload: {
+     ipfsId: 'Qm...',
+  },
+ }
+```
+
 ---
 
 ## Contributing

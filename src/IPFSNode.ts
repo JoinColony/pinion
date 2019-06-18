@@ -15,7 +15,7 @@ import PeerMonitor = require('ipfs-pubsub-peer-monitor');
 interface Message<T, P> {
   type: T;
   // Can be a store address or an ipfs peer id
-  to: string;
+  to?: string;
   payload: P;
 }
 

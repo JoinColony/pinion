@@ -14,10 +14,11 @@ import { create as createIPFS } from 'ipfsd-ctl';
 
 import Pinion, { ClientAction } from '../Pinion';
 import { ClientActions, PinnerActions } from '../actions';
-const { REPLICATE, PIN_HASH } = ClientActions;
-const { HAVE_HEADS } = PinnerActions;
 import AccessControllers from '../AccessControllers';
 import PermissiveAccessController from '../PermissiveAccessController';
+
+const { REPLICATE, PIN_HASH } = ClientActions;
+const { HAVE_HEADS, ANNOUNCE_PINNER } = PinnerActions;
 
 const {
   TEST_NODE_URL = '/ip4/127.0.0.1/tcp/4001/ipfs',
@@ -378,6 +379,52 @@ test('pinner caches stores and limit them to a pre-defined threshold', async t =
   await orbit.disconnect();
   await store1.close();
   await store2.close();
+  await teardown();
+  return pinner.close();
+});
+
+test('pinner announces its presence to peers', async t => {
+  const room = 'PINNER_ANNOUNCEMENT_ROOM';
+  const pinner = new Pinion(room, pinionOpts);
+  const pinnerId = await pinner.getId();
+  const { ipfs, teardown } = await getIPFSNode(pinnerId);
+  await ipfs.pubsub.subscribe(room, noop);
+  const roomMonitor = new PeerMonitor(ipfs.pubsub, room);
+
+  const pinnerAnnouncePromise: Promise<{
+    type: string;
+    payload: { ipfsId: string };
+  }> = new Promise(resolve => {
+    ipfs.pubsub.subscribe(room, (msg: IPFS.PubsubMessage) => {
+      const action = JSON.parse(msg.data.toString());
+      if (action.type === ANNOUNCE_PINNER) resolve(action);
+    });
+  });
+
+  await pinner.start();
+
+  // The pinner should have announced itself on start
+  const pinnerAnnounceAction = await pinnerAnnouncePromise;
+  t.is(pinnerAnnounceAction.payload.ipfsId, pinnerId);
+
+  const newPeerResponsePromise: Promise<{
+    type: string;
+    payload: { ipfsId: string };
+  }> = new Promise(resolve => {
+    ipfs.pubsub.subscribe(room, (msg: IPFS.PubsubMessage) => {
+      const action = JSON.parse(msg.data.toString());
+      if (action.type === ANNOUNCE_PINNER) resolve(action);
+    });
+  });
+
+  pinner.events.emit('pubsub:newpeer', 'client id');
+
+  // The pinner should announce itself in response to a new peer joining
+  const newPeerResponse = await newPeerResponsePromise;
+  t.is(newPeerResponse.payload.ipfsId, pinnerId);
+
+  await ipfs.pubsub.unsubscribe(room, noop);
+  roomMonitor.stop();
   await teardown();
   return pinner.close();
 });

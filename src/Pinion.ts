@@ -19,7 +19,7 @@ import IPFSNode from './IPFSNode';
 const logError = debug('pinner:error');
 const logDebug = debug('pinner:debug');
 const { REPLICATE, PIN_HASH } = ClientActions;
-const { HAVE_HEADS } = PinnerActions;
+const { HAVE_HEADS, ANNOUNCE_PINNER } = PinnerActions;
 
 interface ClientActionPayload {
   ipfsHash?: string;
@@ -85,6 +85,7 @@ class Pinion {
     });
 
     this.events.on('pubsub:message', this.handleMessage);
+    this.events.on('pubsub:newpeer', this.handleNewPeer);
   }
 
   public get openStores(): number {
@@ -131,6 +132,19 @@ class Pinion {
     }
   };
 
+  private handleNewPeer = (): void => {
+    this.announce().catch(logError);
+  };
+
+  private async announce(): Promise<void> {
+    return this.ipfsNode.publish({
+      type: ANNOUNCE_PINNER,
+      payload: {
+        ipfsId: await this.getId(),
+      },
+    });
+  }
+
   private publishHeads = async (
     address: string,
     count: number,
@@ -150,6 +164,7 @@ class Pinion {
     await this.ipfsNode.start();
     logDebug(`Pinner id: ${this.ipfsNode.id}`);
     await this.storeManager.start();
+    await this.announce(); // Announce on start because the room may have peers already
   }
 
   public async getId(): Promise<string> {
