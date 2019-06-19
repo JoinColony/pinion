@@ -43,16 +43,8 @@ interface ReplicationMessagePayload {
   timestamp: number;
 }
 
-interface AckMessagePayload {
-  acknowledgedAction: ClientActions;
-  sender: string;
-  address?: string;
-  ipfsHash?: string;
-  timestamp: number;
-}
-
 interface Options {
-  ipfsDaemonURL?: string;
+  ipfsRepo?: string;
   maxOpenStores?: number;
   orbitDBDir?: string;
 }
@@ -68,8 +60,8 @@ class Pinion {
   constructor(
     room: string,
     {
-      ipfsDaemonURL = '/ip4/127.0.0.1/tcp/5001',
       maxOpenStores = 100,
+      ipfsRepo = './ipfs',
       orbitDBDir = './orbitdb',
     }: Options = {},
   ) {
@@ -77,7 +69,7 @@ class Pinion {
 
     this.events = new EventEmitter();
 
-    this.ipfsNode = new IPFSNode(this.events, ipfsDaemonURL, room);
+    this.ipfsNode = new IPFSNode(this.events, ipfsRepo, room);
 
     this.storeManager = new StoreManager(this.events, this.ipfsNode, {
       maxOpenStores,
