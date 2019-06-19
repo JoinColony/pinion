@@ -18,7 +18,9 @@ interface Message<T, P> {
   payload: P;
 }
 
-import config = require('../ipfsConfig.development.json');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const config = require(`../ipfsConfig.${process.env.NODE_ENV ||
+  'development'}.json`);
 
 const log = debug('pinner:ipfs');
 const logError = debug('pinner:ipfs:error');
