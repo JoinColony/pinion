@@ -123,7 +123,10 @@ const waitForHeads = (
       () => publishMessage(ipfs, room, action),
       2000,
     );
-    const timeout = setTimeout(reject, 10000);
+    const timeout = setTimeout(
+      () => reject(new Error('Replication timeout')),
+      30000,
+    );
     const handleMessage = (msg: IPFS.PubsubMessage) => {
       let action;
       try {
