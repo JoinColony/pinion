@@ -165,8 +165,8 @@ class Pinion {
 
   public async close(): Promise<void> {
     logDebug('Closing...');
-    await this.ipfsNode.stop();
     await this.storeManager.stop();
+    await this.ipfsNode.stop();
     this.events.removeAllListeners();
   }
 }
