@@ -44,6 +44,7 @@ interface ReplicationMessagePayload {
 }
 
 interface Options {
+  ipfsPrivateKey?: string;
   ipfsRepo?: string;
   maxOpenStores?: number;
   orbitDBDir?: string;
@@ -61,6 +62,7 @@ class Pinion {
     room: string,
     {
       maxOpenStores = 100,
+      ipfsPrivateKey,
       ipfsRepo = './ipfs',
       orbitDBDir = './orbitdb',
     }: Options = {},
@@ -69,7 +71,10 @@ class Pinion {
 
     this.events = new EventEmitter();
 
-    this.ipfsNode = new IPFSNode(this.events, ipfsRepo, room);
+    this.ipfsNode = new IPFSNode(this.events, room, {
+      repo: ipfsRepo,
+      privateKey: ipfsPrivateKey,
+    });
 
     this.storeManager = new StoreManager(this.events, this.ipfsNode, {
       maxOpenStores,

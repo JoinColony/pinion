@@ -43,7 +43,7 @@ declare module 'ipfs' {
   interface InitOptions {
     emptyRepo?: boolean;
     bits?: number;
-    privateKey: string | IPFS.PeerId;
+    privateKey?: string | IPFS.PeerId;
   }
 
   interface IPFSConfig {

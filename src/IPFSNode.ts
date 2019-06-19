@@ -18,6 +18,11 @@ interface Message<T, P> {
   payload: P;
 }
 
+interface Options {
+  repo?: string;
+  privateKey?: string;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const config = require(`../ipfsConfig.${process.env.NODE_ENV ||
   'development'}.json`);
@@ -38,10 +43,15 @@ class IPFSNode {
 
   public id: string = '';
 
-  constructor(events: EventEmitter, repo: string, room: string) {
+  constructor(
+    events: EventEmitter,
+    room: string,
+    { repo, privateKey }: Options,
+  ) {
     this.events = events;
     this.ipfs = new IPFS({
       repo,
+      init: { privateKey },
       config,
       EXPERIMENTAL: { pubsub: true },
     });
