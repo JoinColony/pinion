@@ -26,7 +26,7 @@ const pinner = new Pinner(room, {
 pinner
   .start()
   .then(() => {
-    console.info(`Pinner started in room ${room} with daemon ${ipfsDaemonURL}`);
+    console.info(`Pinner started in room ${room}`);
   })
   .catch(caughtError => {
     console.error(caughtError);
