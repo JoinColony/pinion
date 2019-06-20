@@ -101,6 +101,7 @@ class IPFSNode {
   }
 
   public async start(): Promise<void> {
+    await this.ready();
     this.id = await this.getId();
     await this.ipfs.pubsub.subscribe(this.room, this.handlePubsubMessage);
     log(`Joined room: ${this.room}`);
