@@ -21,7 +21,7 @@
     "ipfsd-js": "docker run -v $(pwd)/data-js:/root/.jsipfs -p 4001:4001 -p 4003:4003 -p 127.0.0.1:8080:8080 -p 127.0.0.1:5001:5001 joincolony/js-ipfs:latest daemon --enable-pubsub-experiment",
     "ipfsd-go": "docker run -v $(pwd)/data-go:/data/ipfs -p 4001:4001 -p 4003:4003 -p 127.0.0.1:8080:8080 -p 127.0.0.1:5001:5001 ipfs/go-ipfs:v0.4.20 daemon --enable-pubsub-experiment",
     "start": "yarn build && bin/index.js",
-    "test:ci": "wait-on tcp:$CI_API_PORT && yarn test --tap | tap-xunit > reports/ava/ava-results.xml"
+    "test:ci": "yarn test --tap | tap-xunit > reports/ava/ava-results.xml"
   },
   "keywords": [
     "ipfs",
@@ -44,7 +44,6 @@
     "eslint-config-prettier": "4.2.0",
     "eslint-plugin-prettier": "3.0.1",
     "husky": "2.1.0",
-    "ipfs": "0.35.0",
     "ipfsd-ctl": "0.42.2",
     "lint-staged": "8.1.0",
     "prettier": "1.17.0",
@@ -52,15 +51,15 @@
     "tap-xunit": "2.4.1",
     "ts-node": "8.2.0",
     "typescript": "3.5.1",
-    "wait-on": "^3.3.0-beta.0"
+    "wait-on": "3.3.0-beta.0"
   },
   "dependencies": {
     "debug": "^4.1.0",
     "dotenv": "^7.0.0",
-    "ipfs-http-client": "^30.1.3",
+    "ipfs": "^0.36.4",
     "ipfs-pubsub-peer-monitor": "^0.0.8",
     "is-ipfs": "^0.6.0",
-    "orbit-db": "^0.21.0",
+    "orbit-db": "^0.21.3",
     "yallist": "^3.0.3"
   },
   "ava": {

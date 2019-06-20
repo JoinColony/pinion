@@ -20,13 +20,9 @@ import PermissiveAccessController from '../PermissiveAccessController';
 const { REPLICATE, PIN_HASH } = ClientActions;
 const { HAVE_HEADS, ANNOUNCE_PINNER } = PinnerActions;
 
-const {
-  TEST_NODE_URL = '/ip4/127.0.0.1/tcp/4001/ipfs',
-  TEST_DAEMON_URL,
-} = process.env;
+const { TEST_NODE_URL = '/ip4/127.0.0.1/tcp/4001/ipfs' } = process.env;
 
 const noop = () => {};
-const pinionOpts = { ipfsDaemonURL: TEST_DAEMON_URL };
 const getId = () => randomBytes(16).toString('hex');
 const publishMessage = async (
   ipfs: IPFS,
@@ -39,6 +35,19 @@ const publishMessage = async (
 };
 
 let portCounter = 0;
+let pinnerCounter = 0;
+
+const getPinion = async (
+  room: string,
+  extraOpts?: { maxOpenStores: number },
+): Promise<Pinion> => {
+  const pinion = new Pinion(room, {
+    ipfsRepo: `./ipfs-test-data/test-pinner-${pinnerCounter++}`,
+    ...extraOpts,
+  });
+  await pinion['ipfsNode'].ready();
+  return pinion;
+};
 
 const getIPFSNode = async (pinnerId: string) => {
   portCounter += 1;
@@ -114,7 +123,10 @@ const waitForHeads = (
       () => publishMessage(ipfs, room, action),
       2000,
     );
-    const timeout = setTimeout(reject, 10000);
+    const timeout = setTimeout(
+      () => reject(new Error('Replication timeout')),
+      30000,
+    );
     const handleMessage = (msg: IPFS.PubsubMessage) => {
       let action;
       try {
@@ -140,7 +152,7 @@ const waitForHeads = (
 
 test('pinner joins the defined pubsub room', async t => {
   const room = 'JOIN_ROOM';
-  const pinner = new Pinion(room, pinionOpts);
+  const pinner = await getPinion(room);
   const pinnerId = await pinner.getId();
   const { ipfs, teardown } = await getIPFSNode(pinnerId);
   await ipfs.pubsub.subscribe(room, noop);
@@ -164,7 +176,7 @@ test('pinner joins the defined pubsub room', async t => {
 
 test('pinner responds upon replication event', async t => {
   const room = 'REPLICATED_PIN_ROOM';
-  const pinner = new Pinion(room, pinionOpts);
+  const pinner = await getPinion(room);
   const pinnerId = await pinner.getId();
   const { ipfs, teardown } = await getIPFSNode(pinnerId);
   await ipfs.pubsub.subscribe(room, noop);
@@ -204,7 +216,7 @@ test('pinner responds upon replication event', async t => {
 
 test('pinner pins stuff', async t => {
   const room = 'PIN_ROOM';
-  const pinner = new Pinion(room, pinionOpts);
+  const pinner = await getPinion(room);
   const pinnerId = await pinner.getId();
   const { ipfs, teardown } = await getIPFSNode(pinnerId);
   await ipfs.pubsub.subscribe(room, noop);
@@ -238,7 +250,7 @@ test('pinner pins stuff', async t => {
 
 test('pinner can pin hashes', async t => {
   const room = 'PIN_HASH_ROOM';
-  const pinner = new Pinion(room, pinionOpts);
+  const pinner = await getPinion(room);
   const pinnerId = await pinner.getId();
   const { ipfs, teardown } = await getIPFSNode(pinnerId);
   await ipfs.pubsub.subscribe(room, noop);
@@ -266,7 +278,7 @@ test('pinner can pin hashes', async t => {
 
 test('A third peer can request a previously pinned store', async t => {
   const room = 'LOAD_ROOM';
-  const pinner = new Pinion(room, pinionOpts);
+  const pinner = await getPinion(room);
   const pinnerId = await pinner.getId();
   const { ipfs, teardown } = await getIPFSNode(pinnerId);
   await ipfs.pubsub.subscribe(room, noop);
@@ -339,8 +351,7 @@ test('A third peer can request a previously pinned store', async t => {
 
 test('pinner caches stores and limit them to a pre-defined threshold', async t => {
   const room = 'CACHED_PIN_ROOM';
-  const opts = { ...pinionOpts, maxOpenStores: 1 };
-  const pinner = new Pinion(room, opts);
+  const pinner = await getPinion(room, { maxOpenStores: 1 });
   const pinnerId = await pinner.getId();
   const { ipfs, teardown } = await getIPFSNode(pinnerId);
   await ipfs.pubsub.subscribe(room, noop);
@@ -385,7 +396,7 @@ test('pinner caches stores and limit them to a pre-defined threshold', async t =
 
 test('pinner announces its presence to peers', async t => {
   const room = 'PINNER_ANNOUNCEMENT_ROOM';
-  const pinner = new Pinion(room, pinionOpts);
+  const pinner = await getPinion(room);
   const pinnerId = await pinner.getId();
   const { ipfs, teardown } = await getIPFSNode(pinnerId);
   await ipfs.pubsub.subscribe(room, noop);

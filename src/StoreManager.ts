@@ -8,7 +8,6 @@
  */
 
 import OrbitDBStore from 'orbit-db-store';
-import { Entry } from 'ipfs-log';
 
 import debug = require('debug');
 import OrbitDB = require('orbit-db');

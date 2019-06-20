@@ -60,7 +60,8 @@ Pinion can be configured by either passing in the configuration programatically 
 import Pinion from 'Pinion';
 
 const pinner = new Pinion('YOUR_PINNING_ROOM', {
-  ipfsDaemonURL: '/ip4/127.0.0.1/tcp/5001',
+  ipfsRepo: './ipfs',
+  ipfsPrivateKey: 'CAA...',
   maxOpenStores: 100,
   orbitDBDir: './orbitdb',
 });
@@ -69,7 +70,7 @@ const pinner = new Pinion('YOUR_PINNING_ROOM', {
 Or using environment variables when running it from the command line:
 
 ```bash
-PINION_ROOM=YOUR_PINNING_ROOM PINION_IPFS_DAEMON_URL=/ip4/127.0.0.1/tcp/5001 PINION_MAX_OPEN_STORES=100 PINION_ORBIT_DB_DIR=./orbitdb pinion
+PINION_ROOM=YOUR_PINNING_ROOM PINION_IPFS_REPO=./ipfs PINION_IPFS_PRIVATE_KEY="CAA..." PINION_MAX_OPEN_STORES=100 PINION_ORBIT_DB_DIR=./orbitdb pinion
 ```
 
 #### `PINION_ROOM`
@@ -84,11 +85,17 @@ The IPFS pubsub room pinion is going to join and listen to new messages to.
 
 You can also specify the limit of how many stores you wanna keep open simultaneously by passing in an environment variable `MAX_OPEN_STORES`. The stores will be automatically allocated using a LRU algorithm. The limit is by default set to 100 stores.
 
-#### `PINION_IPFS_DAEMON_URL`
+#### `PINION_IPFS_PRIVATE_KEY`
 
 (optional)
 
-You can specify the an IPFS node url of your preference. The default is `/ip4/127.0.0.1/tcp/5001`
+The private key that is used to initialize the IPFS repo. Will generate a random key when omitted.
+
+#### `PINION_IPFS_REPO`
+
+(optional)
+
+You can specify the an IPFS repo path of your preference. The default is `./ipfs`.
 
 #### `PINION_ORBIT_DB_DIR`
 

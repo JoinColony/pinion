@@ -4,11 +4,10 @@
  * the room peer handling.
  */
 
-import IPFS from 'ipfs';
 import { cid } from 'is-ipfs';
 
+import IPFS = require('ipfs');
 import EventEmitter = require('events');
-import ipfsClient = require('ipfs-http-client');
 import debug = require('debug');
 import PeerMonitor = require('ipfs-pubsub-peer-monitor');
 
@@ -18,6 +17,15 @@ interface Message<T, P> {
   to?: string;
   payload: P;
 }
+
+interface Options {
+  repo?: string;
+  privateKey?: string;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const config = require(`../ipfsConfig.${process.env.NODE_ENV ||
+  'development'}.json`);
 
 const log = debug('pinner:ipfs');
 const logError = debug('pinner:ipfs:error');
@@ -29,13 +37,29 @@ class IPFSNode {
 
   private readonly room: string;
 
+  private readyPromise!: Promise<void>;
+
   private roomMonitor!: PeerMonitor;
 
   public id: string = '';
 
-  constructor(events: EventEmitter, ipfsDaemonURL: string, room: string) {
+  constructor(
+    events: EventEmitter,
+    room: string,
+    { repo, privateKey }: Options,
+  ) {
     this.events = events;
-    this.ipfs = ipfsClient(ipfsDaemonURL);
+    this.ipfs = new IPFS({
+      repo,
+      init: { privateKey },
+      config,
+      EXPERIMENTAL: { pubsub: true },
+    });
+    this.readyPromise = new Promise(
+      (resolve): void => {
+        this.ipfs.on('ready', resolve);
+      },
+    );
     this.room = room;
   }
 
@@ -71,6 +95,11 @@ class IPFSNode {
     return id;
   }
 
+  public async ready(): Promise<void> {
+    if (this.ipfs.isOnline()) return;
+    return this.readyPromise;
+  }
+
   public async start(): Promise<void> {
     this.id = await this.getId();
     await this.ipfs.pubsub.subscribe(this.room, this.handlePubsubMessage);
@@ -85,7 +114,8 @@ class IPFSNode {
 
   public async stop(): Promise<void> {
     this.roomMonitor.stop();
-    return this.ipfs.pubsub.unsubscribe(this.room, this.handlePubsubMessage);
+    await this.ipfs.pubsub.unsubscribe(this.room, this.handlePubsubMessage);
+    return this.ipfs.stop();
   }
 
   public publish<T, P>(message: Message<T, P>): Promise<void> {

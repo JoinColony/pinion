@@ -6,7 +6,8 @@ if (process.env.NODE_ENV !== 'production') config();
 
 const {
   PINION_ROOM: room,
-  PINION_IPFS_DAEMON_URL: ipfsDaemonURL,
+  PINION_IPFS_PRIVATE_KEY: ipfsPrivateKey,
+  PINION_IPFS_REPO: ipfsRepo,
   PINION_MAX_OPEN_STORES: maxOpenStores,
   PINION_ORBIT_DB_DIR: orbitDBDir,
 } = process.env;
@@ -16,7 +17,8 @@ if (!room) {
 }
 
 const pinner = new Pinner(room, {
-  ipfsDaemonURL,
+  ipfsPrivateKey,
+  ipfsRepo,
   maxOpenStores,
   orbitDBDir,
 });
