@@ -24,8 +24,8 @@ interface Options {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const config = require(`${__dirname}/../ipfsConfig.${process.env.NODE_ENV ||
-  'development'}.json`);
+const config = require(process.env.PINION_IPFS_CONFIG_FILE ||
+  `${__dirname}/../ipfsConfig.development.json`);
 
 const log = debug('pinner:ipfs');
 const logError = debug('pinner:ipfs:error');

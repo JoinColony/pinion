@@ -70,7 +70,7 @@ const pinner = new Pinion('YOUR_PINNING_ROOM', {
 Or using environment variables when running it from the command line:
 
 ```bash
-PINION_ROOM=YOUR_PINNING_ROOM PINION_IPFS_REPO=./ipfs PINION_IPFS_PRIVATE_KEY="CAA..." PINION_MAX_OPEN_STORES=100 PINION_ORBIT_DB_DIR=./orbitdb pinion
+PINION_IPFS_CONFIG_FILE=./ipfsConfig.production.json PINION_ROOM=YOUR_PINNING_ROOM PINION_IPFS_REPO=./ipfs PINION_IPFS_PRIVATE_KEY="CAA..." PINION_MAX_OPEN_STORES=100 PINION_ORBIT_DB_DIR=./orbitdb pinion
 ```
 
 #### `PINION_ROOM`
@@ -84,6 +84,12 @@ The IPFS pubsub room pinion is going to join and listen to new messages to.
 (optional)
 
 You can also specify the limit of how many stores you wanna keep open simultaneously by passing in an environment variable `MAX_OPEN_STORES`. The stores will be automatically allocated using a LRU algorithm. The limit is by default set to 100 stores.
+
+#### `PINION_IPFS_CONFIG_FILE`
+
+(optional)
+
+Define a config file to use (see ipfsConfig.production.example.json for an example).
 
 #### `PINION_IPFS_PRIVATE_KEY`
 
