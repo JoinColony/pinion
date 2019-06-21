@@ -32,6 +32,7 @@ jobs:
             CI_API_PORT: 5001
           command: |
             mkdir -p reports/ava
+            yarn lint
             yarn test:ci
       - store_test_results:
           path: reports
