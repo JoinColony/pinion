@@ -35,7 +35,7 @@
     "@types/dotenv": "6.1.1",
     "@types/lru-cache": "5.1.0",
     "@types/node": "10.14.6",
-    "@types/sinon": "7.0.12",
+    "@types/sinon": "7.0.13",
     "@types/yallist": "3.0.1",
     "@typescript-eslint/eslint-plugin": "1.7.0",
     "@typescript-eslint/parser": "1.7.0",
