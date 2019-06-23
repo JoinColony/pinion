@@ -159,11 +159,9 @@ test('pinner joins the defined pubsub room', async t => {
   const roomMonitor = new PeerMonitor(ipfs.pubsub, room);
   // We're initializing it to make ts happy
   let resolveRoomMonitor = noop;
-  const roomMonitorPromise = new Promise(
-    (resolve): void => {
-      resolveRoomMonitor = resolve;
-    },
-  );
+  const roomMonitorPromise = new Promise((resolve): void => {
+    resolveRoomMonitor = resolve;
+  });
   roomMonitor.on('join', resolveRoomMonitor);
   await pinner.start();
   const peer = await roomMonitorPromise;
@@ -228,16 +226,13 @@ test('pinner pins stuff', async t => {
   const store = await createKVStore(orbit, 'kvstore1', storeData);
   const roomMonitor = new PeerMonitor(ipfs.pubsub, room);
   // On every new peer we tell everyone that we want to pin the store
-  roomMonitor.on(
-    'join',
-    (): void => {
-      const action: ClientAction = {
-        type: REPLICATE,
-        payload: { address: store.address.toString() },
-      };
-      publishMessage(ipfs, room, action);
-    },
-  );
+  roomMonitor.on('join', (): void => {
+    const action: ClientAction = {
+      type: REPLICATE,
+      payload: { address: store.address.toString() },
+    };
+    publishMessage(ipfs, room, action);
+  });
   await pinner.start();
   const heads = await waitForHeads(ipfs, store.address.toString(), room, 2);
   t.is(heads, 2);

@@ -23,9 +23,14 @@ interface Options {
   privateKey?: string;
 }
 
+const { PINION_IPFS_CONFIG_FILE, NODE_ENV } = process.env;
+
+const configFile =
+  PINION_IPFS_CONFIG_FILE ||
+  `${__dirname}/../ipfsConfig.${NODE_ENV || 'development'}.json`;
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const config = require(process.env.PINION_IPFS_CONFIG_FILE ||
-  `${__dirname}/../ipfsConfig.development.json`);
+const config = require(configFile);
 
 const log = debug('pinner:ipfs');
 const logError = debug('pinner:ipfs:error');
@@ -55,11 +60,9 @@ class IPFSNode {
       config,
       EXPERIMENTAL: { pubsub: true },
     });
-    this.readyPromise = new Promise(
-      (resolve): void => {
-        this.ipfs.on('ready', resolve);
-      },
-    );
+    this.readyPromise = new Promise((resolve): void => {
+      this.ipfs.on('ready', resolve);
+    });
     this.room = room;
   }
 
