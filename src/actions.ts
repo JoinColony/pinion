@@ -1,6 +1,7 @@
 export enum ClientActions {
   REPLICATE = 'REPLICATE',
   PIN_HASH = 'PIN_HASH',
+  ANNOUNCE_CLIENT = 'ANNOUNCE_CLIENT',
 }
 
 export enum PinnerActions {

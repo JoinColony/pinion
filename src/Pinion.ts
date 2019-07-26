@@ -18,7 +18,7 @@ import IPFSNode from './IPFSNode';
 
 const logError = debug('pinner:error');
 const logDebug = debug('pinner:debug');
-const { REPLICATE, PIN_HASH } = ClientActions;
+const { REPLICATE, PIN_HASH, ANNOUNCE_CLIENT } = ClientActions;
 const { HAVE_HEADS, ANNOUNCE_PINNER } = PinnerActions;
 
 interface ClientActionPayload {
@@ -103,6 +103,13 @@ class Pinion {
     const { type, payload } = action;
     const { ipfsHash, address } = payload;
     switch (type) {
+      case ANNOUNCE_CLIENT: {
+        try {
+          await this.announce();
+        } catch (caughtError) {
+          logError(caughtError);
+        }
+      }
       case PIN_HASH: {
         if (!ipfsHash) {
           logError('PIN_HASH: no ipfsHash given');
