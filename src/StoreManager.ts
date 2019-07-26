@@ -69,6 +69,7 @@ class StoreManager {
 
   private load = async (address: string): Promise<OrbitDBStore> => {
     log(`Opening store with address ${address}`);
+    log(`Open stores: ${this.openStores}`);
     // I think this is done anyways by orbit, but just in case
     const pinHeadHash = (storeAddress: string, ipfsHash: string): void => {
       this.ipfsNode.pinHash(ipfsHash);
