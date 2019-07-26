@@ -81,6 +81,8 @@ class IPFSNode {
 
   private handleNewPeer = (peer: string): void => {
     log(`New peer: ${peer}`);
+    const peers = this.roomMonitor['_peers'];
+    log(`Peers total: ${peers.length}`);
     this.events.emit('pubsub:newpeer', peer);
   };
 

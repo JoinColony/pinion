@@ -9,6 +9,9 @@ declare module 'ipfs-pubsub-peer-monitor' {
 
   class IpfsPubsubPeerMonitor extends EventEmitter {
     constructor(pubsub: IPFS.Pubsub, topic: string, options?: Options);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    private _peers: any[];
+
     public start(): void;
     public stop(): void;
     public getPeers(): Promise<string[]>;
