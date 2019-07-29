@@ -18,7 +18,7 @@ import PermissiveAccessController from './PermissiveAccessController';
 import IPFSNode from './IPFSNode';
 import AsyncLRU from './AsyncLRU';
 
-const log = debug('pinner:storeManager');
+const log = debug('pinion:storeManager');
 
 type StoreType = 'counter' | 'eventlog' | 'feed' | 'docstore' | 'keyvalue';
 
@@ -62,14 +62,14 @@ class StoreManager {
     store: OrbitDBStore | void,
   ): Promise<void> => {
     if (!store) {
-      return log(new Error(`Could not close store: ${address}`));
+      return console.error(new Error(`Could not close store: ${address}`));
     }
     return store.close();
   };
 
   private load = async (address: string): Promise<OrbitDBStore> => {
-    log(`Opening store with address ${address}`);
-    log(`Open stores: ${this.openStores}`);
+    log('Opening store with address %s', address);
+    log('Open stores: %d ', this.openStores);
     // I think this is done anyways by orbit, but just in case
     const pinHeadHash = (storeAddress: string, ipfsHash: string): void => {
       this.ipfsNode.pinHash(ipfsHash);

@@ -4,7 +4,6 @@
  */
 
 import Yallist = require('yallist');
-import debug = require('debug');
 
 type LoadFn<K, V> = (key: K) => Promise<V>;
 type RemoveFn<K, V> = (key: K, value: V | void) => Promise<void>;
@@ -21,8 +20,6 @@ interface Entry<K, V> {
   removing?: Promise<V | void>;
   afterRemoval?: () => Promise<V | void>;
 }
-
-const log = debug('pinner:lru');
 
 const createEntry = <K, V>(
   key: K,
@@ -69,7 +66,7 @@ class AsyncLRU<K, V> {
        * possible duplicates), so we sacrifice a predictable length for predictable
        * content
        */
-      if (this.llist.tail) this.del(this.llist.tail).catch(log);
+      if (this.llist.tail) this.del(this.llist.tail).catch(console.error);
     }
     return loading;
   }
@@ -120,7 +117,7 @@ class AsyncLRU<K, V> {
        * We could also throw here and bubble up to remove to let the outer
        * application decide what to do.
        */
-      log(caughtError);
+      console.error(caughtError);
     }
   }
 
