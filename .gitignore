@@ -3,8 +3,9 @@ node_modules
 yarn-error.log
 .env
 
-### IPFS node data
+### IPFS node data and config
 ipfs
+ipfsConfig.production.json
 
 ### orbit node data
 orbitdb*
