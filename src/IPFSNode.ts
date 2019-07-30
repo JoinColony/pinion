@@ -32,8 +32,7 @@ const configFile =
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const config = require(configFile);
 
-const log = debug('pinner:ipfs');
-const logError = debug('pinner:ipfs:error');
+const log = debug('pinion:ipfs');
 
 class IPFSNode {
   private readonly events: EventEmitter;
@@ -68,26 +67,30 @@ class IPFSNode {
 
   private handlePubsubMessage = (msg: IPFS.PubsubMessage): void => {
     if (!(msg && msg.from && msg.data)) {
-      logError(`Message is invalid: ${msg}`);
+      if (typeof msg == 'string') {
+        log('Message is invalid: %s', msg);
+      } else {
+        log('Message is invalid: %j', msg);
+      }
       return;
     }
 
     // Don't handle messages from ourselves
     if (msg.from === this.id) return;
-    log(`New Message from: ${msg.from}`);
-    log(msg.data.toString());
+    log('New Message from: %s', msg.from);
+    log('%O', msg.data);
     this.events.emit('pubsub:message', msg);
   };
 
   private handleNewPeer = (peer: string): void => {
-    log(`New peer: ${peer}`);
+    log('New peer: %s', peer);
     const peers = this.roomMonitor['_peers'];
-    log(`Peers total: ${peers.length}`);
+    log('Peers total: %d', peers.length);
     this.events.emit('pubsub:newpeer', peer);
   };
 
   private handleLeavePeer = (peer: string): void => {
-    log(`Peer left: ${peer}`);
+    log('Peer left: %s', peer);
     this.events.emit('pubsub:peerleft', peer);
   };
 
@@ -109,13 +112,13 @@ class IPFSNode {
     await this.ready();
     this.id = await this.getId();
     await this.ipfs.pubsub.subscribe(this.room, this.handlePubsubMessage);
-    log(`Joined room: ${this.room}`);
+    log('Joined room: %s', this.room);
 
     this.roomMonitor = new PeerMonitor(this.ipfs.pubsub, this.room);
     this.roomMonitor
       .on('join', this.handleNewPeer)
       .on('leave', this.handleLeavePeer)
-      .on('error', logError);
+      .on('error', console.error);
   }
 
   public async stop(): Promise<void> {
@@ -126,20 +129,20 @@ class IPFSNode {
 
   public publish<T, P>(message: Message<T, P>): Promise<void> {
     const msgString = JSON.stringify(message);
-    log(`Publishing to room ${this.room}: ${msgString}`);
+    log('Publishing to room %s: %O', this.room, message);
     return this.ipfs.pubsub.publish(this.room, Buffer.from(msgString));
   }
 
   public async pinHash(ipfsHash: string): Promise<void> {
     if (!cid(ipfsHash)) {
-      logError(`IPFS hash is invalid: ${ipfsHash}`);
+      log('IPFS hash to pin is invalid: %s', ipfsHash);
       return;
     }
-    log(`Pinning ipfs hash: ${ipfsHash}`);
+    log('Pinning ipfs hash: %s', ipfsHash);
     try {
       await this.ipfs.pin.add(ipfsHash);
     } catch (caughtError) {
-      logError(`Could not pin hash ${ipfsHash}: ${caughtError}`);
+      console.error(`Could not pin hash ${ipfsHash}: ${caughtError}`);
     }
     this.events.emit('ipfs:pinned', ipfsHash);
   }
