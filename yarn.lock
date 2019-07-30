@@ -4460,9 +4460,10 @@ ipfs-http-client@^32.0.0:
     tar-stream "^2.0.1"
     through2 "^3.0.1"
 
-"ipfs-http-client@github:ipfs/js-ipfs-http-client#master":
-  version "32.0.1"
-  resolved "https://codeload.github.com/ipfs/js-ipfs-http-client/tar.gz/fdbfb39c077fa9bfe1ea9ad2847a20bc77d4d4ec"
+ipfs-http-client@ipfs/js-ipfs-http-client#master:
+  version "33.1.1"
+  uid "339c4a729e4ea67ab692ccbd4ce53f6382a3cf82"
+  resolved "https://codeload.github.com/ipfs/js-ipfs-http-client/tar.gz/339c4a729e4ea67ab692ccbd4ce53f6382a3cf82"
   dependencies:
     async "^2.6.1"
     bignumber.js "^9.0.0"
@@ -4481,6 +4482,7 @@ ipfs-http-client@^32.0.0:
     ipfs-utils "~0.0.3"
     ipld-dag-cbor "~0.15.0"
     ipld-dag-pb "~0.17.3"
+    ipld-raw "^4.0.0"
     is-ipfs "~0.6.1"
     is-pull-stream "0.0.0"
     is-stream "^2.0.0"
@@ -6338,9 +6340,9 @@ lodash.defaults@^4.2.0:
   integrity sha1-0JF4cW/+pN3p5ft7N/bwgCJ0WAw=
 
 lodash.defaultsdeep@^4.6.0:
-  version "4.6.0"
-  resolved "https://registry.yarnpkg.com/lodash.defaultsdeep/-/lodash.defaultsdeep-4.6.0.tgz#bec1024f85b1bd96cbea405b23c14ad6443a6f81"
-  integrity sha1-vsECT4WxvZbL6kBbI8FK1kQ6b4E=
+  version "4.6.1"
+  resolved "https://registry.yarnpkg.com/lodash.defaultsdeep/-/lodash.defaultsdeep-4.6.1.tgz#512e9bd721d272d94e3d3a63653fa17516741ca6"
+  integrity sha512-3j8wdDzYuWO3lM3Reg03MuQR957t287Rpcxp1njpEa8oDrikb+FwGdW3n+FELh/A6qib6yPit0j/pv9G/yeAqA==
 
 lodash.filter@^4.6.0:
   version "4.6.0"
