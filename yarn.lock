@@ -4462,7 +4462,6 @@ ipfs-http-client@^32.0.0:
 
 ipfs-http-client@ipfs/js-ipfs-http-client#master:
   version "33.1.1"
-  uid "339c4a729e4ea67ab692ccbd4ce53f6382a3cf82"
   resolved "https://codeload.github.com/ipfs/js-ipfs-http-client/tar.gz/339c4a729e4ea67ab692ccbd4ce53f6382a3cf82"
   dependencies:
     async "^2.6.1"
@@ -6097,7 +6096,7 @@ libp2p-tcp@~0.13.0:
     once "^1.4.0"
     stream-to-pull-stream "^1.7.2"
 
-libp2p-webrtc-star@~0.16.0:
+libp2p-webrtc-star@^0.16.1, libp2p-webrtc-star@~0.16.0:
   version "0.16.1"
   resolved "https://registry.yarnpkg.com/libp2p-webrtc-star/-/libp2p-webrtc-star-0.16.1.tgz#d160a157d033f1ad915cf460776a1ca32f352b75"
   integrity sha512-TLQ/Qhfx367kETt2pz2ejzVMB01PQjkBqxP+p+PD84N+JuFg3HVQw8jwXdiXexg/gKNMH+WwqVeWiKv/mVrCNA==

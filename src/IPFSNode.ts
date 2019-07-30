@@ -11,6 +11,8 @@ import EventEmitter = require('events');
 import debug = require('debug');
 import PeerMonitor = require('ipfs-pubsub-peer-monitor');
 
+import customLibp2pBundle from './customLibp2pBundle';
+
 interface Message<T, P> {
   type: T;
   // Can be a store address or an ipfs peer id
@@ -58,6 +60,7 @@ class IPFSNode {
       init: { privateKey },
       config,
       EXPERIMENTAL: { pubsub: true },
+      libp2p: customLibp2pBundle,
     });
     this.readyPromise = new Promise((resolve): void => {
       this.ipfs.on('ready', resolve);
