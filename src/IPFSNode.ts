@@ -10,6 +10,8 @@ import IPFS = require('ipfs');
 import EventEmitter = require('events');
 import debug = require('debug');
 import PeerMonitor = require('ipfs-pubsub-peer-monitor');
+import wrtc = require('wrtc');
+import WStar = require('libp2p-webrtc-star');
 
 interface Message<T, P> {
   type: T;
@@ -33,6 +35,7 @@ const configFile =
 const config = require(configFile);
 
 const log = debug('pinion:ipfs');
+const wstar = new WStar({ wrtc });
 
 class IPFSNode {
   private readonly events: EventEmitter;
@@ -58,6 +61,12 @@ class IPFSNode {
       init: { privateKey },
       config,
       EXPERIMENTAL: { pubsub: true },
+      libp2p: {
+        modules: {
+          transport: [wstar],
+          peerDiscovery: [wstar.discovery],
+        },
+      },
     });
     this.readyPromise = new Promise((resolve): void => {
       this.ipfs.on('ready', resolve);
