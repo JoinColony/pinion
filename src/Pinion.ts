@@ -108,6 +108,7 @@ class Pinion {
         } catch (caughtError) {
           console.error(caughtError);
         }
+        break;
       }
       case PIN_HASH: {
         if (!ipfsHash) {
