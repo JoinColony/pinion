@@ -94,8 +94,11 @@ class Pinion {
     let action: ClientAction | undefined;
     try {
       action = JSON.parse(message.data.toString());
-    } catch (e) {
-      log('Could not parse pinner message: %O', message.data);
+    } catch (caughtError) {
+      if (log.enabled) {
+        // Only stringify when absolutely necessary
+        log('Could not parse pinner message: %O', message.data.toString());
+      }
     }
 
     if (!action) return;
@@ -123,7 +126,10 @@ class Pinion {
       }
       case REPLICATE: {
         if (!address) {
-          log('REPLICATE: no address given: %O', message.data);
+          if (log.enabled) {
+            // Only stringify when absolutely necessary
+            log('REPLICATE: no address given: %O', message.data.toString());
+          }
           return;
         }
         try {
