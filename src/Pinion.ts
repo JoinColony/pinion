@@ -111,7 +111,10 @@ class Pinion {
       }
       case PIN_HASH: {
         if (!ipfsHash) {
-          log('PIN_HASH: no ipfsHash given: %O', message.data);
+          if (log.enabled) {
+            // Only stringify when absolutely necessary
+            log('PIN_HASH: no ipfsHash given: %O', message.data.toString());
+          }
           return;
         }
         this.ipfsNode.pinHash(ipfsHash).catch(console.error);
