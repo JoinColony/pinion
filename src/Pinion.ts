@@ -94,8 +94,11 @@ class Pinion {
     let action: ClientAction | undefined;
     try {
       action = JSON.parse(message.data.toString());
-    } catch (e) {
-      log('Could not parse pinner message: %O', message.data);
+    } catch (caughtError) {
+      if (log.enabled) {
+        // Only stringify when absolutely necessary
+        log('Could not parse pinner message: %O', message.data.toString());
+      }
     }
 
     if (!action) return;
@@ -108,10 +111,14 @@ class Pinion {
         } catch (caughtError) {
           console.error(caughtError);
         }
+        break;
       }
       case PIN_HASH: {
         if (!ipfsHash) {
-          log('PIN_HASH: no ipfsHash given: %O', message.data);
+          if (log.enabled) {
+            // Only stringify when absolutely necessary
+            log('PIN_HASH: no ipfsHash given: %O', message.data.toString());
+          }
           return;
         }
         this.ipfsNode.pinHash(ipfsHash).catch(console.error);
@@ -119,7 +126,10 @@ class Pinion {
       }
       case REPLICATE: {
         if (!address) {
-          log('REPLICATE: no address given: %O', message.data);
+          if (log.enabled) {
+            // Only stringify when absolutely necessary
+            log('REPLICATE: no address given: %O', message.data.toString());
+          }
           return;
         }
         try {

@@ -81,7 +81,10 @@ class IPFSNode {
     // Don't handle messages from ourselves
     if (msg.from === this.id) return;
     log('New Message from: %s', msg.from);
-    log('%O', msg.data);
+    if (log.enabled) {
+      // Only stringify when absolutely necessary
+      log('%O', msg.data.toString());
+    }
     this.events.emit('pubsub:message', msg);
   };
 
