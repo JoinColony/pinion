@@ -12,6 +12,7 @@ import OrbitDBStore from 'orbit-db-store';
 import debug = require('debug');
 import OrbitDB = require('orbit-db');
 import EventEmitter = require('events');
+import Logger = require('logplease');
 
 import AccessControllers from './AccessControllers';
 import PermissiveAccessController from './PermissiveAccessController';
@@ -19,6 +20,11 @@ import IPFSNode from './IPFSNode';
 import AsyncLRU from './AsyncLRU';
 
 const log = debug('pinion:storeManager');
+const debugOrbit = debug('pinion:orbitdb');
+
+if (debugOrbit.enabled) {
+  Logger.setLogLevel('DEBUG');
+}
 
 type StoreType = 'counter' | 'eventlog' | 'feed' | 'docstore' | 'keyvalue';
 
