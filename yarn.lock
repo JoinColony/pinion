@@ -2038,7 +2038,7 @@ cids@^0.7.1, cids@~0.7.0, cids@~0.7.1:
     multicodec "~0.5.1"
     multihashes "~0.4.14"
 
-cids@~0.5.5, cids@~0.5.6:
+cids@~0.5.5:
   version "0.5.8"
   resolved "https://registry.yarnpkg.com/cids/-/cids-0.5.8.tgz#3d5000c3856a2d3c00967b21265aa57142611aa0"
   integrity sha512-Ye8TZP3YQfy0j+i5k+LPHdTY3JOvTwN1pxds44p6BRUv8PTMOAF/Vt4Bc+oiIQ0Sktn0iftkUHgqKNHIMwhshA==
@@ -4341,7 +4341,7 @@ ipfs-http-client@^32.0.0:
     tar-stream "^2.0.1"
     through2 "^3.0.1"
 
-"ipfs-http-client@github:ipfs/js-ipfs-http-client#master":
+ipfs-http-client@ipfs/js-ipfs-http-client#master:
   version "33.1.1"
   resolved "https://codeload.github.com/ipfs/js-ipfs-http-client/tar.gz/719bfad4d0cef994960f80c0b481ffb1d1ad1fab"
   dependencies:
@@ -4926,19 +4926,7 @@ is-ip@^2.0.0:
   dependencies:
     ip-regex "^2.0.0"
 
-is-ipfs@^0.6.0:
-  version "0.6.0"
-  resolved "https://registry.yarnpkg.com/is-ipfs/-/is-ipfs-0.6.0.tgz#97e80f6fee09381042111721aeaf017a31df0fff"
-  integrity sha512-q/CO69rN+vbw9eGXGQOAa15zXq+pSyhdKvE7mqvuplDu67LyT3H9t3RyYQvKpueN7dL4f6fbyjEMPp9J3rJ4qA==
-  dependencies:
-    bs58 "^4.0.1"
-    cids "~0.5.6"
-    mafmt "^v6.0.7"
-    multiaddr "^6.0.4"
-    multibase "~0.6.0"
-    multihashes "~0.4.13"
-
-is-ipfs@~0.6.1:
+is-ipfs@^0.6.1, is-ipfs@~0.6.1:
   version "0.6.1"
   resolved "https://registry.yarnpkg.com/is-ipfs/-/is-ipfs-0.6.1.tgz#c85069c73275dc6a60673c791a9be731e2b4bfc4"
   integrity sha512-WhqQylam6pODS2RyqT/u0PR5KWtBZNCgPjgargFOVQjzw/3+6d0midXenzU65klM4LH13IUiCC6ObhDUdXZ7Nw==
@@ -6282,7 +6270,7 @@ ltgt@^2.1.2, ltgt@~2.2.0:
   resolved "https://registry.yarnpkg.com/ltgt/-/ltgt-2.2.1.tgz#f35ca91c493f7b73da0e07495304f17b31f87ee5"
   integrity sha1-81ypHEk/e3PaDgdJUwTxezH4fuU=
 
-mafmt@^6.0.2, mafmt@^6.0.4, mafmt@^6.0.7, mafmt@^v6.0.7:
+mafmt@^6.0.2, mafmt@^6.0.4, mafmt@^6.0.7:
   version "6.0.7"
   resolved "https://registry.yarnpkg.com/mafmt/-/mafmt-6.0.7.tgz#80312e08bfba0f89e2daa403525f33e07d9b97fa"
   integrity sha512-2OG/EGAJZmpZBl7YRT1hD83sZa2gKsUEdegRuURreIOe7B4VeHU1rYYmhgk7BkLzknGL3xGYsDx3bbSgEEzE7g==
@@ -7184,10 +7172,10 @@ orbit-db-store@~2.6.0:
     p-each-series "^1.0.0"
     readable-stream "~2.3.5"
 
-orbit-db@^0.21.3:
-  version "0.21.3"
-  resolved "https://registry.yarnpkg.com/orbit-db/-/orbit-db-0.21.3.tgz#5eb7a2252c5b8a4399a1164b25206eed9e5e9430"
-  integrity sha512-LS4l+HbHg5Kx/d7KUZp1FQK0+/CNlbr2kyZsf7GU6b3cU5Vi46pMFAl0SG30bqIWfdDLxkNb3JG6isW/sIUNyg==
+orbit-db@^0.21.4:
+  version "0.21.4"
+  resolved "https://registry.yarnpkg.com/orbit-db/-/orbit-db-0.21.4.tgz#0b15d9f23a73e9cd7c673f31d69de152e0753b5f"
+  integrity sha512-3iIUlZT+HSplZCvV7MqMT0n39FrnOXKH899jMfkpml11vf23lYa62K5rDZ3R3odXF/83e1VFVNkclndDaZsofQ==
   dependencies:
     cids "^0.7.1"
     ipfs-pubsub-1on1 "~0.0.4"
