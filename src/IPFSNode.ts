@@ -47,7 +47,7 @@ class IPFSNode {
 
   private roomMonitor!: PeerMonitor;
 
-  public id: string = '';
+  public id = '';
 
   constructor(
     events: EventEmitter,

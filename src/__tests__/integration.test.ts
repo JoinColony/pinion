@@ -9,7 +9,6 @@ import { EntryData } from 'ipfs-log';
 import PeerMonitor = require('ipfs-pubsub-peer-monitor');
 import OrbitDB = require('orbit-db');
 import OrbitDBKVStore from 'orbit-db-kvstore';
-// @ts-ignore We don't want to type that right now
 import { create as createIPFS } from 'ipfsd-ctl';
 
 import Pinion, { ClientAction } from '../Pinion';

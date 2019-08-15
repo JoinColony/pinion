@@ -9,7 +9,9 @@ class PermissiveAccessController implements AccessControllers.AccessController {
     return PermissiveAccessController.type;
   }
 
-  public async load(): Promise<void> {}
+  public async load(): Promise<void> {
+    return;
+  }
 
   public async grant(): Promise<boolean> {
     return true;
