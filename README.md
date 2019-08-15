@@ -10,8 +10,8 @@
     <img src="https://img.shields.io/badge/renovate-enabled-brightgreen.svg"
     title="Renovate enabled" />
   </a>
-  <a href="https://gitter.im/JoinColony/pinion">
-    <img src="https://img.shields.io/gitter/room/TechnologyAdvice/Stardust.svg" title="Join us on gitter" />
+  <a href="https://discord.gg/HDkjCqF">
+    <img src="https://img.shields.io/discord/562263648173555742?logo=discord" alt="Chat on Discord">
   </a>
   <a href="https://build.colony.io/">
     <img src="https://img.shields.io/discourse/https/build.colony.io/status.svg" title="Contribute!" />
