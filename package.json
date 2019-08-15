@@ -39,7 +39,7 @@
     "@typescript-eslint/parser": "1.10.2",
     "ava": "2.1.0",
     "eslint": "5.16.0",
-    "eslint-config-prettier": "5.0.0",
+    "eslint-config-prettier": "5.1.0",
     "eslint-plugin-prettier": "3.1.0",
     "husky": "2.4.1",
     "ipfsd-ctl": "0.43.0",
