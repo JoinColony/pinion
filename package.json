@@ -1,6 +1,6 @@
 {
   "name": "@colony/pinion",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "description": "Colony orbit-db pinning service",
   "bin": {
     "pinion": "bin/index.js"
