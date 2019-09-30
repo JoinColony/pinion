@@ -60,7 +60,7 @@
     "libp2p-webrtc-star": "^0.16.1",
     "orbit-db": "^0.21.4",
     "wrtc": "^0.4.1",
-    "yallist": "^3.0.3"
+    "yallist": "^4.0.0"
   },
   "resolutions": {
     "leveldown": "5.1.1"
