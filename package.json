@@ -63,7 +63,7 @@
     "yallist": "^3.0.3"
   },
   "resolutions": {
-    "leveldown": "5.1.1"
+    "leveldown": "5.6.0"
   },
   "ava": {
     "files": [
