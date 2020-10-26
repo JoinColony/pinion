@@ -54,7 +54,7 @@
   "dependencies": {
     "debug": "^4.1.0",
     "dotenv": "^8.0.0",
-    "ipfs": "^0.36.4",
+    "ipfs": "^0.50.0",
     "ipfs-pubsub-peer-monitor": "^0.0.8",
     "is-ipfs": "^0.6.1",
     "libp2p-webrtc-star": "^0.16.1",
